@@ -126,6 +126,12 @@ def main() -> int:
     else:
         report += "_ANTHROPIC_API_KEY not set — add it as a repo secret to get Claude's tuning recommendation._\n"
 
+    if summary.get("trades"):
+        report += "\n\n### Trades\n\n| Open | Close | Profit | Exit reason |\n|---|---|---|---|\n"
+        for t in summary["trades"]:
+            report += (f"| {str(t['open_date'])[:10]} | {str(t['close_date'])[:10]} | "
+                       f"{(t['profit_ratio'] or 0) * 100:.2f}% | {t['exit_reason']} |\n")
+
     print(report)
     if args.out:
         Path(args.out).write_text(report)

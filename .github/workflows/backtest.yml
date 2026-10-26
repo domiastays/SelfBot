@@ -74,6 +74,12 @@ jobs:
         run: |
           python -m selfbot.claude_review --out claude_review.md
           cat claude_review.md >> "$GITHUB_STEP_SUMMARY"
+          # Also publish as an annotation so it shows on the run page and via the API
+          python - <<'EOF'
+          s = open("claude_review.md").read()
+          s = s.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+          print(f"::notice title=SelfBot backtest ({__import__('os').environ['EXCHANGE']})::{s}")
+          EOF
 
       - name: Upload results
         if: always()
