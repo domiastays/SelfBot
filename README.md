@@ -1,2 +1,52 @@
 # SelfBot
-Autonomous daily trading bot scaffold combining Freqtrade core with Hummingbot-inspired monitors and a Claude control API.
+
+Autonomous daily BTC/USDT trading bot: a Freqtrade trend-following strategy with Claude as
+backtest analyst and (optionally) a second-opinion gate on every trade.
+
+**Status: backtest / paper-trading only.** `config.sample.json` is locked to `dry_run: true`.
+
+## How Claude is wired in
+
+| Where | What Claude does | File |
+|---|---|---|
+| GitHub Actions / `./backtest.sh` | Reads the backtest stats and returns a verdict + the single next tuning experiment | `selfbot/claude_review.py` |
+| Dry-run / live bot | Before each entry, sees the last 30 daily candles + indicators and approves or vetoes | `selfbot/claude_gate.py` |
+
+Claude is **never called during backtests or hyperopt** (fast, free, reproducible).
+Gate modes (`CLAUDE_GATE`): `advisory` (default — logs only), `enforce` (can veto; errors block the trade), `off`.
+
+## Quick start — on GitHub (no install)
+
+1. Repo **Settings → Secrets and variables → Actions → New repository secret**:
+   `ANTHROPIC_API_KEY` = your key from https://console.anthropic.com
+2. **Actions → Backtest + Claude review → Run workflow** (pick timerange).
+3. Open the run: the summary page shows the Freqtrade metrics and Claude's review.
+
+It also runs automatically whenever the strategy, config or `selfbot/` code changes.
+
+## Quick start — on your computer
+
+```bash
+git clone https://github.com/domiastays/SelfBot.git && cd SelfBot
+./setup.sh && source .venv/bin/activate
+export ANTHROPIC_API_KEY=sk-ant-...      # optional
+./backtest.sh 20240101 20241231          # downloads data, backtests, Claude review
+./dryrun.sh                              # paper trading with the Claude gate
+```
+
+## Strategy (`user_data/strategies/FreqtradeDailyHybridStrategy.py`)
+
+- **Entry:** close > 100-day SMA (market-health gate), EMA9 > EMA21, fresh EMA cross-up or
+  price reclaiming EMA9, RSI(14) < 65
+- **Exit:** EMA9 crosses below EMA21, or RSI was > 70 and price falls back under EMA9
+- **Risk:** ATR(14) × 3.0 trailing stop, hard stop −10%, 1 open trade, 100 USDT stake,
+  cooldown / stoploss-guard / 20% max-drawdown protections
+
+All parameters are hyperopt-ready — see [docs/tuning.md](docs/tuning.md).
+
+## Road to live (don't skip steps)
+
+1. Backtest 2024 → tune one parameter at a time (docs/tuning.md)
+2. Validate on a period you did **not** tune on (e.g. 2023, or 2025)
+3. Dry-run for at least 2–4 weeks with `CLAUDE_GATE=advisory`, compare Claude's calls with outcomes
+4. Only then copy to a git-ignored `config.live.json`, add trade-only (no withdrawal) API keys, small stake

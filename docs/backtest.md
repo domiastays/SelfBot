@@ -3,8 +3,8 @@
 This is the safe first step in the SelfBot lifecycle: validate the daily strategy with historical data before enabling live trading.
 
 What you need
-- Freqtrade installed locally: https://www.freqtrade.io/en/stable/installation/
-- Crypto data available to Freqtrade for your exchange
+- Freqtrade installed locally (`./setup.sh` does it) — or use the GitHub Actions workflow instead
+- Historical data: `./backtest.sh` downloads it automatically
 - The strategy file present in `user_data/strategies/FreqtradeDailyHybridStrategy.py`
 
 Important
@@ -31,7 +31,8 @@ freqtrade backtesting \
 ```
 
 Notes
-- If the repo is used as-is, make sure the strategy file is copied into the Freqtrade project under `user_data/strategies/`.
+- The repo is a self-contained Freqtrade user directory: the strategy already lives in `user_data/strategies/`.
+- No local install? Run it on GitHub: Actions → "Backtest + Claude review" → Run workflow.
 - Use stable, liquid pairs like BTC/USDT before broadening the universe.
 - After a successful backtest, run the bot in dry-run mode and monitor results before switching to live.
 
