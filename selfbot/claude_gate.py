@@ -78,7 +78,7 @@ class ClaudeGate:
                 SYSTEM_PROMPT,
                 f"Pair: {pair}\nProposed entry price: {rate}\nSignal: {entry_tag}\n\n"
                 f"Last 30 daily candles with indicators (CSV):\n{table}",
-                max_tokens=300,
+                max_tokens=1024,
             )
             text = text.strip()
             start, end = text.find("{"), text.rfind("}")

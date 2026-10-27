@@ -53,7 +53,7 @@ def model_name(p: str | None = None) -> str | None:
     return None
 
 
-def complete(system: str, user: str, max_tokens: int = 1500, timeout: int = 90) -> tuple[str, str]:
+def complete(system: str, user: str, max_tokens: int = 4000, timeout: int = 90) -> tuple[str, str]:
     """Return (text, label). Raises on any failure so callers can fall back."""
     p = provider()
     if p is None:
