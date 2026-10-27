@@ -173,9 +173,19 @@ def main() -> int:
     try:
         review, source = ask_llm(summary)
     except Exception as exc:
-        print(f"AI review unavailable ({exc}); using rule-based review.", file=sys.stderr)
+        detail = str(exc)
+        body = getattr(exc, "read", None)
+        if callable(body):
+            try:
+                detail += " - " + body().decode(errors="replace")[:300]
+            except Exception:
+                pass
+        print(f"AI review unavailable ({detail}); using rule-based review.", file=sys.stderr)
+        source_note = f" - AI unavailable: {detail}"
+    else:
+        source_note = ""
     if not review:
-        review, source = rule_based_review(summary), "built-in rules (no AI)"
+        review, source = rule_based_review(summary), "built-in rules (no AI)" + source_note
     report += review + f"\n\n_Review by: {source}_\n"
 
     if summary.get("trades"):
