@@ -1,0 +1,106 @@
+name: Backtest + AI review
+
+on:
+  workflow_dispatch:
+    inputs:
+      timerange:
+        description: "Backtest timerange (YYYYMMDD-YYYYMMDD)"
+        default: "20240101-20241231"
+      exchange:
+        description: "Exchange for historical data (auto = try binance, binanceus, okx, gate)"
+        default: "auto"
+  push:
+    paths:
+      - "user_data/strategies/**"
+      - "config.sample.json"
+      - "selfbot/**"
+      - ".github/workflows/backtest.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TIMERANGE: ${{ inputs.timerange || '20240101-20241231' }}
+      EXCHANGE_CHOICE: ${{ inputs.exchange || 'auto' }}
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install Freqtrade + Anthropic SDK
+        run: pip install -r requirements.txt
+
+      - name: Download BTC/USDT daily candles
+        run: |
+          START="${TIMERANGE%%-*}"
+          # 300 extra days so EMAs / 100-day SMA are warmed up before the test window
+          DL_START=$(date -u -d "${START} -300 days" +%Y%m%d)
+          if [ "$EXCHANGE_CHOICE" = "auto" ]; then CANDIDATES="binance binanceus okx gate"; else CANDIDATES="$EXCHANGE_CHOICE"; fi
+          for EX in $CANDIDATES; do
+            echo "::group::Trying $EX"
+            jq --arg ex "$EX" '.exchange.name = $ex' config.sample.json > ci.config.json
+            if freqtrade download-data -c ci.config.json --timerange "${DL_START}-" --timeframes 1d \
+                 && ls user_data/data/$EX/BTC_USDT-1d.* >/dev/null 2>&1; then
+              echo "EXCHANGE=$EX" >> "$GITHUB_ENV"; echo "::endgroup::"; echo "Using $EX"; exit 0
+            fi
+            echo "::endgroup::"
+          done
+          echo "::error::Could not download data from any exchange ($CANDIDATES)"; exit 1
+
+      - name: Run backtest
+        run: |
+          freqtrade backtesting -c ci.config.json --timerange "$TIMERANGE" --export trades \
+            --breakdown month 2>&1 | tee backtest_output.txt
+          {
+            echo "## Freqtrade backtest — ${EXCHANGE} BTC/USDT 1d, ${TIMERANGE}"
+            echo '```'
+            sed -n '/SUMMARY METRICS/,$p' backtest_output.txt | sed 's/\x1b\[[0-9;]*m//g'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: AI review
+        env:
+          # Free: add a GEMINI_API_KEY secret (aistudio.google.com, no card needed).
+          # Optional, paid: an ANTHROPIC_API_KEY secret uses Claude instead.
+          # With neither, a rule-based verdict is written.
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
+        run: |
+          python -m selfbot.claude_review --out claude_review.md
+          cat claude_review.md >> "$GITHUB_STEP_SUMMARY"
+          # Also publish as an annotation so it shows on the run page and via the API
+          python - <<'EOF'
+          s = open("claude_review.md").read()
+          s = s.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+          print(f"::notice title=SelfBot backtest ({__import__('os').environ['EXCHANGE']})::{s}")
+          EOF
+
+      - name: AI trade-gate test (latest real candles)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
+        run: python -m selfbot.gate_selftest --data "$(ls user_data/data/$EXCHANGE/BTC_USDT-1d.* | head -1)"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-${{ github.run_number }}
+          path: |
+            backtest_output.txt
+            claude_review.md
+            user_data/backtest_results/
+          if-no-files-found: warn
