@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SelfBot Live</title>
+<meta name="description" content="SelfBot paper-trading dashboard: BTC/USDT daily trend strategy with AI review.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#111418; --muted:#5d6672; --line:#e3e6ea;
+  --up:#0f9d6b; --down:#d4413a; --accent:#2f6fed; --warn:#b7791f; --chip:#eef1f5;
+  --fast:#2f6fed; --slow:#e08a00; --sma:#8a94a3;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1014; --panel:#151a20; --ink:#e8ecf1; --muted:#8b95a3; --line:#252c35;
+    --up:#2bc48a; --down:#ff6b61; --accent:#6d9cff; --warn:#e0a84a; --chip:#1d242d;
+    --fast:#6d9cff; --slow:#f0a63a; --sma:#6b7584;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1014; --panel:#151a20; --ink:#e8ecf1; --muted:#8b95a3; --line:#252c35;
+  --up:#2bc48a; --down:#ff6b61; --accent:#6d9cff; --warn:#e0a84a; --chip:#1d242d;
+  --fast:#6d9cff; --slow:#f0a63a; --sma:#6b7584;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1200px;margin:0 auto;padding:20px 16px 48px}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin-bottom:18px}
+.brand{font-weight:700;font-size:18px;letter-spacing:-.01em}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--chip);color:var(--muted);font-size:12px;font-weight:600}
+.badge.paper{color:var(--warn)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--up);box-shadow:0 0 0 0 var(--up);animation:pulse 2s infinite}
+.dot.stale{background:var(--muted);animation:none}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--up) 60%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.price{margin-left:auto;text-align:right}
+.price .v{font-size:26px;font-weight:600;letter-spacing:-.02em}
+.price .s{color:var(--muted);font-size:12px}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.kpi .l{color:var(--muted);font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.kpi .v{font-size:22px;font-weight:600;margin-top:4px;letter-spacing:-.01em}
+.kpi .s{color:var(--muted);font-size:12px;margin-top:2px}
+.up{color:var(--up)} .down{color:var(--down)}
+h2{font-size:13px;margin:0 0 12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:8px}
+h2 .r{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500}
+.two{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+#chart{height:400px} #equity{height:160px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.cond{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}
+.cond:first-of-type{border-top:0}
+.tick{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff}
+.tick.ok{background:var(--up)} .tick.no{background:var(--line);color:var(--muted)}
+.cond .d{color:var(--muted);font-size:12px}
+.verdict{margin-top:12px;padding:12px;border-radius:10px;background:var(--chip)}
+.verdict .h{font-weight:600;display:flex;gap:8px;align-items:center}
+.verdict p{margin:6px 0 0;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--muted);font-weight:500;font-size:12px;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.empty{color:var(--muted);padding:14px 0}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:600;background:var(--chip)}
+.pill.ok{color:var(--up)} .pill.no{color:var(--down)}
+.best{font-weight:700}
+.foot{color:var(--muted);font-size:12px;margin-top:18px;display:flex;flex-wrap:wrap;gap:6px 16px}
+.foot a{color:var(--accent)}
+.md{color:var(--ink);margin-top:8px}.md h3{font-size:14px;margin:16px 0 6px}.md p{margin:6px 0}.md ul{margin:6px 0;padding-left:20px}.md li{margin:3px 0}.md code{font-family:"JetBrains Mono",monospace;font-size:12px;background:var(--chip);padding:1px 5px;border-radius:4px}.md pre{background:var(--chip);padding:10px;border-radius:8px;overflow-x:auto;font-size:12px}
+.err{background:color-mix(in srgb,var(--down) 12%,var(--panel));border-color:var(--down);display:none}
+@media (max-width:860px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}#chart{height:320px}.price{margin-left:0;text-align:left;width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">SelfBot</div>
+    <span class="badge paper">PAPER MONEY · DRY RUN</span>
+    <span class="badge"><span class="dot stale" id="dot"></span><span id="botAge">loading…</span></span>
+    <div class="price">
+      <div class="v mono" id="livePrice">—</div>
+      <div class="s"><span id="pairLbl">BTC/USDT</span> · <span id="priceSrc">connecting…</span></div>
+    </div>
+  </header>
+
+  <div class="panel err" id="err" style="margin-bottom:14px"></div>
+
+  <div class="grid kpis">
+    <div class="panel kpi"><div class="l">Paper equity</div><div class="v mono" id="kEq">—</div><div class="s" id="kEqS">&nbsp;</div></div>
+    <div class="panel kpi"><div class="l">P&amp;L since launch</div><div class="v mono" id="kPnl">—</div><div class="s" id="kPnlS">&nbsp;</div></div>
+    <div class="panel kpi"><div class="l">Position</div><div class="v" id="kPos">—</div><div class="s mono" id="kPosS">&nbsp;</div></div>
+    <div class="panel kpi"><div class="l">Closed trades</div><div class="v mono" id="kTr">—</div><div class="s" id="kTrS">&nbsp;</div></div>
+  </div>
+
+  <div class="grid two" style="margin-top:14px">
+    <div class="panel">
+      <h2>BTC/USDT · daily <span class="r mono" id="paramsLbl"></span></h2>
+      <div id="chart"></div>
+      <div class="legend">
+        <span><i style="background:var(--fast)"></i><span id="lgFast">fast EMA</span></span>
+        <span><i style="background:var(--slow)"></i><span id="lgSlow">slow EMA</span></span>
+        <span><i style="background:var(--sma)"></i><span id="lgSma">trend SMA</span></span>
+        <span>▲ entry signal · ▼ exit signal</span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Today's signal check <span class="r" id="sigTime"></span></h2>
+      <div id="conds"></div>
+      <div class="verdict" id="aiBox"><div class="h">AI daily read</div><p>Waiting for the first AI check…</p></div>
+    </div>
+  </div>
+
+  <div class="grid two" style="margin-top:14px">
+    <div class="panel">
+      <h2>Paper equity curve <span class="r" id="eqSince"></span></h2>
+      <div id="equity"></div>
+    </div>
+    <div class="panel">
+      <h2>Bot activity</h2>
+      <div id="events"></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:14px">
+    <h2>Strategy comparison (backtests) <span class="r" id="cmpTime"></span></h2>
+    <div class="scroll" id="compare"><div class="empty">Waiting for the first comparison run…</div></div>
+    <details id="reviewBox" style="display:none;margin-top:14px"><summary style="cursor:pointer;font-weight:600">AI verdict on the backtests</summary><div id="review" class="md"></div></details>
+  </div>
+
+  <div class="grid two" style="margin-top:14px">
+    <div class="panel">
+      <h2>Paper trades</h2>
+      <div class="scroll" id="trades"></div>
+    </div>
+    <div class="panel">
+      <h2>AI decisions</h2>
+      <div class="scroll" id="ailog"></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Bot runs hourly on GitHub Actions; decisions use closed daily candles (00:00 UTC).</span>
+    <span>Live price refreshes every 10 s in your browser.</span>
+    <a href="https://github.com/domiastays/SelfBot">Repository</a>
+    <a href="https://github.com/domiastays/SelfBot/actions">Runs</a>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = (v, d=2) => v==null||isNaN(v) ? "—" : Number(v).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct = (v, d=1) => v==null||isNaN(v) ? "—" : (v>=0?"+":"") + (v*100).toFixed(d) + "%";
+const cls = v => v>0 ? "up" : v<0 ? "down" : "";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ago = iso => { const s=(Date.now()-new Date(iso))/1000; if(s<90) return "just now"; if(s<5400) return Math.round(s/60)+" min ago"; if(s<172800) return Math.round(s/3600)+" h ago"; return Math.round(s/86400)+" days ago"; };
+const day = s => String(s||"").slice(0,10);
+
+let S = null, livePrice = null, chart, cSeries, fSeries, sSeries, mSeries, eqChart, eqSeries;
+
+function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function chartOpts(h){ return { height:h, layout:{background:{color:"transparent"},textColor:css("--muted"),fontFamily:"Inter, system-ui"},
+  grid:{vertLines:{color:css("--line")},horzLines:{color:css("--line")}}, rightPriceScale:{borderColor:css("--line")},
+  timeScale:{borderColor:css("--line")}, crosshair:{mode:0}, handleScroll:true, handleScale:true }; }
+
+function initCharts(){
+  if (!window.LightweightCharts) return;
+  chart = LightweightCharts.createChart($("chart"), chartOpts($("chart").clientHeight));
+  cSeries = chart.addCandlestickSeries({upColor:css("--up"),downColor:css("--down"),borderVisible:false,wickUpColor:css("--up"),wickDownColor:css("--down")});
+  mSeries = chart.addLineSeries({color:css("--sma"),lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false});
+  sSeries = chart.addLineSeries({color:css("--slow"),lineWidth:2,priceLineVisible:false,lastValueVisible:false});
+  fSeries = chart.addLineSeries({color:css("--fast"),lineWidth:2,priceLineVisible:false,lastValueVisible:false});
+  eqChart = LightweightCharts.createChart($("equity"), chartOpts($("equity").clientHeight));
+  eqSeries = eqChart.addAreaSeries({lineColor:css("--accent"),topColor:"rgba(47,111,237,.25)",bottomColor:"rgba(47,111,237,0)",lineWidth:2});
+  new ResizeObserver(() => { chart.applyOptions({width:$("chart").clientWidth}); eqChart.applyOptions({width:$("equity").clientWidth}); }).observe(document.body);
+}
+
+let stopLine = null, entryLine = null;
+function renderChart(){
+  if (!chart || !S) return;
+  const c = S.candles;
+  cSeries.setData(c.map(k => ({time:k.t,open:k.o,high:k.h,low:k.l,close:k.c})));
+  fSeries.setData(c.map(k => ({time:k.t,value:k.f})));
+  sSeries.setData(c.map(k => ({time:k.t,value:k.s})));
+  mSeries.setData(c.filter(k=>k.m!=null).map(k => ({time:k.t,value:k.m})));
+  const marks = [];
+  c.forEach(k => { if(k.e) marks.push({time:k.t,position:"belowBar",color:css("--up"),shape:"arrowUp"});
+                   if(k.x) marks.push({time:k.t,position:"aboveBar",color:css("--down"),shape:"arrowDown"}); });
+  cSeries.setMarkers(marks);
+  if (stopLine) { cSeries.removePriceLine(stopLine); stopLine=null; }
+  if (entryLine) { cSeries.removePriceLine(entryLine); entryLine=null; }
+  if (S.position) {
+    entryLine = cSeries.createPriceLine({price:S.position.entry_price,color:css("--accent"),lineWidth:1,lineStyle:0,axisLabelVisible:true,title:"entry"});
+    stopLine = cSeries.createPriceLine({price:S.position.stop,color:css("--down"),lineWidth:1,lineStyle:2,axisLabelVisible:true,title:"stop"});
+  }
+  if (!renderChart.fitted) { chart.timeScale().setVisibleLogicalRange({from:c.length-120,to:c.length+3}); renderChart.fitted = true; }
+  const eq = S.equity.map(e => ({time:Math.floor(new Date(e.date)/1000),value:e.equity}));
+  eqSeries.setData(eq); eqChart.timeScale().fitContent();
+}
+
+function renderKpis(){
+  const a = S.account, p = S.position, px = livePrice ?? S.price;
+  const eq = a.cash + (p ? p.amount * px * 0.999 : 0);
+  const pnl = eq - a.wallet_start;
+  $("kEq").textContent = fmt(eq) + " USDT";
+  $("kEqS").textContent = "started with " + fmt(a.wallet_start,0) + " USDT · cash " + fmt(a.cash);
+  $("kPnl").innerHTML = `<span class="${cls(pnl)}">${(pnl>=0?"+":"")+fmt(pnl)}</span>`;
+  const hold = a.start_price ? px / a.start_price - 1 : null;
+  $("kPnlS").innerHTML = `${pct(pnl/a.wallet_start,2)} · BTC since launch <span class="${cls(hold)}">${pct(hold)}</span>`;
+  if (p) {
+    const u = p.amount * px * 0.999 - p.stake, up = px / p.entry_price - 1;
+    $("kPos").innerHTML = `LONG <span class="${cls(u)} mono" style="font-size:16px">${pct(up,2)}</span>`;
+    $("kPosS").textContent = `entry ${fmt(p.entry_price,0)} · stop ${fmt(p.stop,0)} · ${(u>=0?"+":"")+fmt(u)} USDT`;
+  } else {
+    $("kPos").textContent = "Flat";
+    $("kPosS").textContent = "waiting for an entry signal";
+  }
+  const t = S.trades, wins = t.filter(x=>x.pnl>0).length, tot = t.reduce((s,x)=>s+x.pnl,0);
+  $("kTr").textContent = t.length;
+  $("kTrS").innerHTML = t.length ? `${wins} won · realized <span class="${cls(tot)}">${(tot>=0?"+":"")+fmt(tot)}</span> USDT` : "none yet";
+}
+
+function renderSignal(){
+  const sig = S.signal;
+  $("sigTime").textContent = "candle " + day(S.last_closed_candle);
+  const all = sig.conditions.every(c=>c.ok);
+  $("conds").innerHTML = sig.conditions.map(c => `<div class="cond"><span class="tick ${c.ok?"ok":"no"}">${c.ok?"✓":"·"}</span><div><div>${esc(c.name)}</div><div class="d mono">${esc(c.detail)}</div></div></div>`).join("")
+    + `<div class="cond"><span class="tick ${all?"ok":"no"}">${all?"✓":"·"}</span><div><b>${sig.enter?"Entry signal fired":"No entry signal"}</b>${sig.exit?' · <span class="down">exit signal fired</span>':""}</div></div>`;
+  const ai = [...S.ai_log].reverse().find(x => x.kind==="daily_read") || S.ai_log[S.ai_log.length-1];
+  if (ai) {
+    const ok = ai.approve === true, bad = ai.approve === false;
+    $("aiBox").innerHTML = `<div class="h">AI daily read <span class="pill ${ok?"ok":bad?"no":""}">${ok?"would buy":bad?"would not buy":"no answer"}</span>
+      <span class="mono" style="margin-left:auto;font-weight:400;color:var(--muted);font-size:12px">${ai.confidence!=null?"conf "+Math.round(ai.confidence*100)+"%":""}</span></div>
+      <p>${esc(ai.reason || ai.error || "")}</p><p style="font-size:12px">${esc(ai.model||"")} · ${day(ai.date)}</p>`;
+  }
+}
+
+function renderLists(){
+  $("eqSince").textContent = "since " + day(S.account.started_at);
+  const ev = [...(S.events||[])].reverse();
+  $("events").innerHTML = ev.length ? `<table>${ev.slice(0,12).map(e=>`<tr><td class="mono">${esc(e)}</td></tr>`).join("")}</table>`
+    : `<div class="empty">No trades yet. The bot checks every hour and acts when a daily candle closes with a signal.</div>`;
+  const t = [...S.trades].reverse();
+  $("trades").innerHTML = t.length ? `<table><tr><th>Opened</th><th>Closed</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Reason</th></tr>
+    ${t.map(x=>`<tr><td class="mono">${day(x.entry_date)}</td><td class="mono">${day(x.exit_date)}</td><td class="mono">${fmt(x.entry_price,0)}</td><td class="mono">${fmt(x.exit_price,0)}</td>
+    <td class="mono ${cls(x.pnl)}">${pct(x.pnl_pct,2)}</td><td>${esc(x.exit_reason)}</td></tr>`).join("")}</table>`
+    : `<div class="empty">No closed paper trades yet.</div>`;
+  const a = [...S.ai_log].reverse();
+  $("ailog").innerHTML = a.length ? `<table><tr><th>Date</th><th>Type</th><th>Verdict</th><th>Reason</th></tr>
+    ${a.slice(0,15).map(x=>`<tr><td class="mono">${day(x.date)}</td><td>${x.kind==="daily_read"?"daily read":"entry gate"}</td>
+    <td><span class="pill ${x.approve===true?"ok":x.approve===false?"no":""}">${x.approve===true?"yes":x.approve===false?"no":"—"}</span></td><td>${esc(x.reason||x.error||"")}</td></tr>`).join("")}</table>`
+    : `<div class="empty">No AI calls yet.</div>`;
+  const p = S.params;
+  $("paramsLbl").textContent = `EMA ${p.ema_short}/${p.ema_long} · RSI<${p.rsi_buy_max} · ATR×${p.atr_multiplier}`;
+  $("lgFast").textContent = "EMA " + p.ema_short; $("lgSlow").textContent = "EMA " + p.ema_long; $("lgSma").textContent = "SMA " + p.trend_sma;
+}
+
+function renderCompare(C){
+  if (!C || !C.results) return;
+  $("cmpTime").textContent = "updated " + ago(C.generated_at);
+  const vs = Object.keys(C.results), ps = Object.keys(C.periods);
+  const best = {}; ps.forEach(p => { let b=null,bv=-1e9; vs.forEach(v=>{const m=C.results[v][p]; if(m&&m.profit_on_stake!=null&&m.profit_on_stake>bv){bv=m.profit_on_stake;b=v;}}); best[p]=b; });
+  let h = `<table><tr><th>Variant</th>${ps.map(p=>`<th>${esc(p)}</th>`).join("")}<th>Total</th></tr>`;
+  vs.forEach(v => {
+    h += `<tr><td><b>${esc(v)}</b></td>`;
+    ps.forEach(p => { const m = C.results[v][p];
+      if (!m || m.error) { h += `<td class="d">error</td>`; return; }
+      h += `<td class="mono"><span class="${cls(m.profit_on_stake)} ${best[p]===v?"best":""}">${pct(m.profit_on_stake)}</span><div style="color:var(--muted);font-size:11px">${m.total_trades} tr · win ${Math.round((m.winrate||0)*100)}% · DD ${((m.max_drawdown_account||0)*100).toFixed(1)}%</div></td>`; });
+    const t = C.totals[v];
+    h += `<td class="mono"><b class="${cls(t.sum_profit_on_stake)}">${pct(t.sum_profit_on_stake)}</b><div style="color:var(--muted);font-size:11px">${t.losing_periods}/${t.periods} losing</div></td></tr>`;
+  });
+  const p0 = vs.length ? C.results[vs[0]] : {};
+  h += `<tr><td style="color:var(--muted)">BTC buy &amp; hold</td>${ps.map(p=>`<td class="mono" style="color:var(--muted)">${pct(p0[p]?.market_change)}</td>`).join("")}<td></td></tr></table>
+    <div style="color:var(--muted);font-size:12px;margin-top:8px">Profit on the 100 USDT stake per trade. Bold = best variant that period.</div>`;
+  $("compare").innerHTML = h;
+}
+
+function md(src){
+  const inl = t => esc(t).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/`([^`]+)`/g,"<code>$1</code>").replace(/(^|\s)\*(\S.*?)\*(?=\s|$)/g,"$1<i>$2</i>").replace(/_(\S.*?)_(?=\s|$)/g,"<i>$1</i>");
+  let out = "", list = false, code = false, buf = [];
+  for (const line of src.split("\n")) {
+    if (line.startsWith("```")) { if (code) { out += `<pre>${esc(buf.join("\n"))}</pre>`; buf = []; } code = !code; continue; }
+    if (code) { buf.push(line); continue; }
+    if (/^\s*[-*] /.test(line)) { if (!list) { out += "<ul>"; list = true; } out += `<li>${inl(line.replace(/^\s*[-*] /,""))}</li>`; continue; }
+    if (list) { out += "</ul>"; list = false; }
+    if (/^#{1,3} /.test(line)) { if (!/^# SelfBot/.test(line)) out += `<h3>${inl(line.replace(/^#+ /,""))}</h3>`; }
+    else if (/^\|/.test(line) || /^-{3,}$/.test(line.trim()) || !line.trim()) continue;
+    else out += `<p>${inl(line)}</p>`;
+  }
+  return out + (list ? "</ul>" : "");
+}
+
+async function loadStatus(){
+  try {
+    const r = await fetch("status.json?ts=" + Date.now(), {cache:"no-store"});
+    if (!r.ok) throw new Error("status.json " + r.status);
+    S = await r.json();
+    $("err").style.display = "none";
+    const stale = (Date.now() - new Date(S.generated_at)) > 3*3600*1000;
+    $("dot").className = "dot" + (stale ? " stale" : "");
+    $("botAge").textContent = "bot updated " + ago(S.generated_at);
+    $("pairLbl").textContent = S.pair;
+    if (livePrice == null) { $("livePrice").textContent = fmt(S.price); $("priceSrc").textContent = "last bot price"; }
+    renderKpis(); renderSignal(); renderLists(); renderChart();
+  } catch (e) {
+    $("err").style.display = "block";
+    $("err").textContent = "Could not load bot data yet (" + e.message + "). The first hourly run may still be in progress.";
+  }
+  try { const r = await fetch("compare.json?ts=" + Date.now(), {cache:"no-store"}); if (r.ok) renderCompare(await r.json()); } catch (e) {}
+  try { const r = await fetch("review.md?ts=" + Date.now(), {cache:"no-store"}); if (r.ok) { $("review").innerHTML = md(await r.text()); $("reviewBox").style.display = "block"; } } catch (e) {}
+}
+
+const SOURCES = [
+  ["Binance", "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT", j => +j.price],
+  ["Binance", "https://data-api.binance.vision/api/v3/ticker/price?symbol=BTCUSDT", j => +j.price],
+  ["Coinbase (USD)", "https://api.exchange.coinbase.com/products/BTC-USD/ticker", j => +j.price],
+];
+let srcIdx = 0, lastPx = null;
+async function tick(){
+  for (let n = 0; n < SOURCES.length; n++) {
+    const [name, url, pick] = SOURCES[(srcIdx + n) % SOURCES.length];
+    try {
+      const r = await fetch(url, {cache:"no-store"}); if (!r.ok) throw 0;
+      const px = pick(await r.json()); if (!px) throw 0;
+      srcIdx = (srcIdx + n) % SOURCES.length;
+      livePrice = px;
+      const el = $("livePrice"); el.textContent = fmt(px);
+      el.className = "v mono " + (lastPx==null ? "" : px>lastPx ? "up" : px<lastPx ? "down" : el.className.replace("v mono","").trim());
+      lastPx = px;
+      $("priceSrc").textContent = "live · " + name + " · " + new Date().toLocaleTimeString();
+      if (S) renderKpis();
+      return;
+    } catch (e) {}
+  }
+  $("priceSrc").textContent = "live price unavailable · showing bot price";
+}
+
+initCharts();
+loadStatus(); tick();
+setInterval(tick, 10000);
+setInterval(loadStatus, 60000);
+</script>
+</body>
+</html>
