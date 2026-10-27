@@ -117,9 +117,12 @@ def _other_flash_models(tried: list[str], errors: list[str]) -> list[str]:
 
 
 def _gemini(model: str, system: str, user: str, max_tokens: int, timeout: int) -> str:
+    # Gemini "thinking" models spend hidden reasoning tokens out of max_tokens, which
+    # silently truncated answers at 300-1500. Give them room; the visible answer stays short.
+    budget = max(max_tokens, int(os.getenv("GEMINI_MAX_TOKENS", "8192")))
     body = json.dumps({
         "model": model,
-        "max_tokens": max_tokens,
+        "max_tokens": budget,
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
     }).encode()
     req = urllib.request.Request(GEMINI_URL, data=body, method="POST", headers={
@@ -129,9 +132,12 @@ def _gemini(model: str, system: str, user: str, max_tokens: int, timeout: int) -
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         raw = resp.read().decode(errors="replace")
     try:
-        text = json.loads(raw)["choices"][0]["message"]["content"]
+        choice = json.loads(raw)["choices"][0]
+        text = choice["message"]["content"]
     except Exception as exc:
         raise RuntimeError(f"unexpected Gemini response: {raw[:300]!r}") from exc
     if not text:
         raise RuntimeError("Gemini returned an empty answer")
+    if choice.get("finish_reason") == "length":
+        text += "\n\n_(answer was cut off by the token limit; raise GEMINI_MAX_TOKENS)_"
     return text

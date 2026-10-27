@@ -86,6 +86,14 @@ jobs:
           print(f"::notice title=SelfBot backtest ({__import__('os').environ['EXCHANGE']})::{s}")
           EOF
 
+      - name: AI trade-gate test (latest real candles)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
+        run: python -m selfbot.gate_selftest --data "$(ls user_data/data/$EXCHANGE/BTC_USDT-1d.* | head -1)"
+
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
