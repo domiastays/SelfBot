@@ -1,0 +1,144 @@
+{
+ "generated_at": "2026-10-27T12:12:09.415433+00:00",
+ "variants": {
+  "baseline 9/21": {},
+  "slower 10/35": {
+   "buy": {
+    "ema_short": 10,
+    "ema_long": 35
+   }
+  }
+ },
+ "periods": {
+  "2023": "20230101-20231231",
+  "2024": "20240101-20241231",
+  "2025": "20250101-20251231",
+  "2026 YTD": "20260101-"
+ },
+ "results": {
+  "baseline 9/21": {
+   "2023": {
+    "total_trades": 9,
+    "winrate": 0.3333333333333333,
+    "profit_total": 0.043636002,
+    "market_change": 1.54280018077252,
+    "max_drawdown_account": 0.015268996974332209,
+    "profit_factor": 2.3758510980733765,
+    "sharpe": 0.14212638238977968,
+    "backtest_start": "2023-01-01 00:00:00",
+    "backtest_end": "2023-12-31 00:00:00",
+    "top2_share": 1.49,
+    "profit_on_stake": 0.4364
+   },
+   "2024": {
+    "total_trades": 10,
+    "winrate": 0.3,
+    "profit_total": 0.04675151175000001,
+    "market_change": 1.1250004829546554,
+    "max_drawdown_account": 0.022790136446825784,
+    "profit_factor": 2.3624312772325062,
+    "sharpe": 0.1371010082325187,
+    "backtest_start": "2024-01-01 00:00:00",
+    "backtest_end": "2024-12-31 00:00:00",
+    "top2_share": 1.71,
+    "profit_on_stake": 0.4675
+   },
+   "2025": {
+    "total_trades": 8,
+    "winrate": 0.25,
+    "profit_total": -0.01305501394,
+    "market_change": -0.07383159382174809,
+    "max_drawdown_account": 0.016982661689999987,
+    "profit_factor": 0.5126379413463962,
+    "sharpe": -0.11911023204847668,
+    "backtest_start": "2025-01-01 00:00:00",
+    "backtest_end": "2025-12-31 00:00:00",
+    "top2_share": null,
+    "profit_on_stake": -0.1306
+   },
+   "2026 YTD": {
+    "total_trades": 2,
+    "winrate": 1.0,
+    "profit_total": 0.00537964929,
+    "market_change": -0.09817285087495745,
+    "max_drawdown_account": 0.0,
+    "profit_factor": 0.0,
+    "sharpe": 0.2291340993298277,
+    "backtest_start": "2026-01-01 00:00:00",
+    "backtest_end": "2026-10-26 00:00:00",
+    "top2_share": 1.0,
+    "profit_on_stake": 0.0538
+   }
+  },
+  "slower 10/35": {
+   "2023": {
+    "total_trades": 7,
+    "winrate": 0.2857142857142857,
+    "profit_total": 0.00932512718,
+    "market_change": 1.54280018077252,
+    "max_drawdown_account": 0.016327318251215403,
+    "profit_factor": 1.39356398106056,
+    "sharpe": 0.046910765746745194,
+    "backtest_start": "2023-01-01 00:00:00",
+    "backtest_end": "2023-12-31 00:00:00",
+    "top2_share": 3.54,
+    "profit_on_stake": 0.0933
+   },
+   "2024": {
+    "total_trades": 10,
+    "winrate": 0.2,
+    "profit_total": 0.015370282289999995,
+    "market_change": 1.1250004829546554,
+    "max_drawdown_account": 0.026781128292968744,
+    "profit_factor": 1.3884567956459242,
+    "sharpe": 0.05602181574091268,
+    "backtest_start": "2024-01-01 00:00:00",
+    "backtest_end": "2024-12-31 00:00:00",
+    "top2_share": 3.57,
+    "profit_on_stake": 0.1537
+   },
+   "2025": {
+    "total_trades": 7,
+    "winrate": 0.2857142857142857,
+    "profit_total": -0.0009143584500000008,
+    "market_change": -0.07383159382174809,
+    "max_drawdown_account": 0.01334249808000004,
+    "profit_factor": 0.9627938655839582,
+    "sharpe": -0.006064466229091073,
+    "backtest_start": "2025-01-01 00:00:00",
+    "backtest_end": "2025-12-31 00:00:00",
+    "top2_share": null,
+    "profit_on_stake": -0.0091
+   },
+   "2026 YTD": {
+    "total_trades": 3,
+    "winrate": 0.3333333333333333,
+    "profit_total": -0.0016439410399999995,
+    "market_change": -0.09817285087495745,
+    "max_drawdown_account": 0.003660872132967614,
+    "profit_factor": 0.5562168210066655,
+    "sharpe": -0.04453428438507196,
+    "backtest_start": "2026-01-01 00:00:00",
+    "backtest_end": "2026-10-26 00:00:00",
+    "top2_share": null,
+    "profit_on_stake": -0.0164
+   }
+  }
+ },
+ "totals": {
+  "baseline 9/21": {
+   "trades": 29,
+   "sum_profit_on_stake": 0.8271000000000001,
+   "worst_period": -0.1306,
+   "losing_periods": 1,
+   "periods": 4
+  },
+  "slower 10/35": {
+   "trades": 27,
+   "sum_profit_on_stake": 0.2215,
+   "worst_period": -0.0164,
+   "losing_periods": 2,
+   "periods": 4
+  }
+ }
+}
