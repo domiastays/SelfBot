@@ -1,1 +1,1 @@
-"""SelfBot: Freqtrade daily strategy + Claude control layer."""
+"""SelfBot: Freqtrade daily strategy + AI control layer (Gemini free tier, Claude optional)."""
