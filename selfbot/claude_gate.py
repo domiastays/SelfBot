@@ -4,14 +4,18 @@ Claude trade gate for SelfBot.
 Before the bot opens a position (dry-run or live only), the strategy sends
 Claude the last 30 daily candles plus indicators and asks for a JSON verdict.
 
+The model comes from selfbot/llm.py: Claude if ANTHROPIC_API_KEY is set,
+otherwise the free GitHub Models tier if GITHUB_TOKEN is set (a GitHub personal
+access token with the "Models: read" permission works locally).
+
 Modes (env CLAUDE_GATE):
-  off       - never call Claude (default if ANTHROPIC_API_KEY is missing)
-  advisory  - ask Claude, log its verdict, but always let the trade through (default)
-  enforce   - Claude can veto entries. Any error -> trade is blocked (fail closed)
+  off       - never call a model (also the result when no provider is configured)
+  advisory  - ask the model, log its verdict, but always let the trade through (default)
+  enforce   - the model can veto entries. Any error -> trade is blocked (fail closed)
 
 Other env vars:
-  ANTHROPIC_API_KEY   - required unless CLAUDE_GATE=off
-  CLAUDE_MODEL        - default "claude-sonnet-5-5"
+  ANTHROPIC_API_KEY / GITHUB_TOKEN - one of them is needed unless CLAUDE_GATE=off
+  CLAUDE_MODEL / GITHUB_MODEL      - model overrides, see selfbot/llm.py
   CLAUDE_GATE_LOG     - JSONL decision log, default user_data/logs/claude_gate.jsonl
 """
 
@@ -45,24 +49,23 @@ class ClaudeGate:
     mode: str
     model: str
     log_path: Path
-    _client: object = None
 
     @classmethod
     def from_env(cls) -> "ClaudeGate | None":
         mode = os.getenv("CLAUDE_GATE", "advisory").lower()
         if mode == "off":
             return None
-        if not os.getenv("ANTHROPIC_API_KEY"):
-            logger.warning("ClaudeGate: ANTHROPIC_API_KEY not set - gate disabled.")
+        from selfbot.llm import model_name, provider
+
+        if provider() is None:
+            logger.warning("ClaudeGate: no ANTHROPIC_API_KEY or GITHUB_TOKEN set - gate disabled.")
             return None
-        import anthropic  # imported lazily so backtests don't need it
 
         gate = cls(
             mode=mode,
-            model=os.getenv("CLAUDE_MODEL", "claude-sonnet-5-5"),
+            model=model_name(),
             log_path=Path(os.getenv("CLAUDE_GATE_LOG", "user_data/logs/claude_gate.jsonl")),
         )
-        gate._client = anthropic.Anthropic()
         logger.info("ClaudeGate enabled: mode=%s model=%s", gate.mode, gate.model)
         return gate
 
@@ -70,17 +73,15 @@ class ClaudeGate:
         verdict = {"approve": None, "confidence": None, "reason": None, "error": None}
         try:
             table = snapshot.round(2).to_csv(index=False)
-            msg = self._client.messages.create(
-                model=self.model,
+            from selfbot.llm import complete
+
+            text, _ = complete(
+                SYSTEM_PROMPT,
+                f"Pair: {pair}\nProposed entry price: {rate}\nSignal: {entry_tag}\n\n"
+                f"Last 30 daily candles with indicators (CSV):\n{table}",
                 max_tokens=300,
-                system=SYSTEM_PROMPT,
-                messages=[{
-                    "role": "user",
-                    "content": f"Pair: {pair}\nProposed entry price: {rate}\nSignal: {entry_tag}\n\n"
-                               f"Last 30 daily candles with indicators (CSV):\n{table}",
-                }],
             )
-            text = msg.content[0].text.strip()
+            text = text.strip()
             start, end = text.find("{"), text.rfind("}")
             verdict.update(json.loads(text[start:end + 1]))
         except Exception as exc:  # network, parsing, quota...

@@ -7,7 +7,7 @@ set -euo pipefail
 #   ./backtest.sh 20240601 20240630    # custom range
 # Env overrides: CONFIG_FILE, STRATEGY_NAME
 #
-# Afterwards it asks Claude to review the result if ANTHROPIC_API_KEY is set.
+# Afterwards it writes a review: AI if GITHUB_TOKEN or ANTHROPIC_API_KEY is set, rule-based otherwise.
 
 cd "$(dirname "$0")"
 export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"

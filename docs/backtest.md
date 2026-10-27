@@ -32,7 +32,7 @@ freqtrade backtesting \
 
 Notes
 - The repo is a self-contained Freqtrade user directory: the strategy already lives in `user_data/strategies/`.
-- No local install? Run it on GitHub: Actions → "Backtest + Claude review" → Run workflow.
+- No local install? Run it on GitHub: Actions → "Backtest + AI review" → Run workflow.
 - Use stable, liquid pairs like BTC/USDT before broadening the universe.
 - After a successful backtest, run the bot in dry-run mode and monitor results before switching to live.
 

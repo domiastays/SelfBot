@@ -1,12 +1,14 @@
 """
-Ask Claude to review the latest Freqtrade backtest and recommend the next tuning step.
+Review the latest Freqtrade backtest and recommend the next tuning step.
 
 Usage:
     python -m selfbot.claude_review                 # latest result in user_data/backtest_results
     python -m selfbot.claude_review --out review.md
 
-Without ANTHROPIC_API_KEY it still prints the metrics summary (no Claude call),
-so it is safe to run anywhere.
+The written review comes from the first available provider (see selfbot/llm.py):
+Claude if ANTHROPIC_API_KEY is set, otherwise the free GitHub Models tier via
+GITHUB_TOKEN. If neither works, a rule-based verdict against the same targets is
+written instead, so every run gets a verdict and no paid key is required.
 """
 
 from __future__ import annotations
@@ -75,17 +77,66 @@ def summarize(strategy: dict) -> dict:
     return out
 
 
-def ask_claude(summary: dict) -> str:
-    import anthropic
+def ask_llm(summary: dict) -> tuple[str, str]:
+    from selfbot.llm import complete
 
-    client = anthropic.Anthropic()
-    msg = client.messages.create(
-        model=os.getenv("CLAUDE_MODEL", "claude-sonnet-5-5"),
-        max_tokens=1500,
-        system=RUBRIC,
-        messages=[{"role": "user", "content": "Backtest results (JSON):\n" + json.dumps(summary, default=str, indent=1)}],
-    )
-    return msg.content[0].text
+    return complete(RUBRIC, "Backtest results (JSON):\n" + json.dumps(summary, default=str, indent=1))
+
+
+def rule_based_review(s: dict) -> str:
+    """Score the backtest against the rubric targets without any AI call."""
+    def f(k):
+        v = s.get(k)
+        return v if isinstance(v, (int, float)) else None
+
+    profit, market = f("profit_total"), f("market_change")
+    dd, pf, wr, n = f("max_drawdown_account"), f("profit_factor"), f("winrate"), f("total_trades")
+    top2 = f("share_of_profit_from_top2_trades")
+    checks = []  # (passed or None, text)
+    checks.append((profit is not None and profit > 0,
+                   f"Total profit {profit * 100:.2f}%" if profit is not None else "Total profit unknown"))
+    if profit is not None and market is not None:
+        checks.append((profit >= market, f"vs BTC buy & hold {market * 100:.2f}%"
+                       + (" (beat it)" if profit >= market else " (lagged it)")))
+    if dd is not None:
+        checks.append((dd < 0.25, f"Max drawdown {dd * 100:.2f}% (target under 20-25%)"))
+    if pf is not None:
+        checks.append((pf >= 1.3, f"Profit factor {pf:.2f} (target 1.3-1.6+)"))
+    if wr is not None:
+        checks.append((wr >= 0.35, f"Win rate {wr * 100:.1f}% (target ~45-60%, lower OK if winners are big)"))
+    if n is not None:
+        checks.append((n >= 8, f"{n} trades (want ~8-30 per year on a daily strategy)"))
+    if top2 is not None:
+        checks.append((top2 <= 0.8, f"Top 2 trades made {top2 * 100:.0f}% of profit"
+                       + (" - too dependent on a few trades" if top2 > 0.8 else "")))
+
+    fails = [t for ok, t in checks if not ok]
+    if profit is None or profit <= 0 or (dd is not None and dd >= 0.35):
+        verdict = "REJECT"
+    elif fails:
+        verdict = "NEEDS TUNING"
+    else:
+        verdict = "PASS"
+
+    if n is not None and n < 8:
+        nxt = "Too few trades. Shorten the fast EMA (ema_short 9 -> 7) so the strategy trades more often."
+    elif dd is not None and dd >= 0.25:
+        nxt = "Drawdown too deep. Tighten the ATR trailing stop (atr_multiplier 3.0 -> 2.5)."
+    elif pf is not None and pf < 1.3:
+        nxt = "Weak profit factor. Tighten the RSI entry filter (rsi_buy_max 65 -> 60)."
+    elif profit is not None and market is not None and profit < market:
+        nxt = "Lagging buy & hold. Hold trends longer: lengthen the slow EMA (ema_long 21 -> 30) or loosen the ATR stop (atr_multiplier 3.0 -> 3.5)."
+    else:
+        nxt = "Re-run on a different year (e.g. 20230101-20231231) to check the result holds out of sample."
+
+    out = [f"## Verdict\n**{verdict}** (rule-based check against the targets)\n", "## What the numbers say"]
+    out += [f"- {'OK' if ok else 'FAIL'}: {t}" for ok, t in checks]
+    out += ["", "## Next experiment", nxt,
+            "Change one thing, then re-run the workflow (or `./backtest.sh`).", "",
+            "## Before going live",
+            "- Confirm the result on at least one other year of data.",
+            "- Run in dry-run mode for a few weeks before using real money."]
+    return "\n".join(out) + "\n"
 
 
 def metrics_table(s: dict) -> str:
@@ -118,13 +169,14 @@ def main() -> int:
 
     summary = summarize(load_latest_stats(Path(args.results_dir)))
     report = "# SelfBot backtest review\n\n" + metrics_table(summary) + "\n\n"
-    if os.getenv("ANTHROPIC_API_KEY"):
-        try:
-            report += ask_claude(summary)
-        except Exception as exc:
-            report += f"_Claude review failed: {exc}_\n"
-    else:
-        report += "_ANTHROPIC_API_KEY not set — add it as a repo secret to get Claude's tuning recommendation._\n"
+    review, source = None, None
+    try:
+        review, source = ask_llm(summary)
+    except Exception as exc:
+        print(f"AI review unavailable ({exc}); using rule-based review.", file=sys.stderr)
+    if not review:
+        review, source = rule_based_review(summary), "built-in rules (no AI)"
+    report += review + f"\n\n_Review by: {source}_\n"
 
     if summary.get("trades"):
         report += "\n\n### Trades\n\n| Open | Close | Profit | Exit reason |\n|---|---|---|---|\n"

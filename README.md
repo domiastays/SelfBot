@@ -1,26 +1,35 @@
 # SelfBot
 
-Autonomous daily BTC/USDT trading bot: a Freqtrade trend-following strategy with Claude as
+Autonomous daily BTC/USDT trading bot: a Freqtrade trend-following strategy with an AI
 backtest analyst and (optionally) a second-opinion gate on every trade.
+
+**No paid API key needed.** The AI parts use the free [GitHub Models](https://docs.github.com/en/github-models)
+tier by default. Add an `ANTHROPIC_API_KEY` only if you want Claude instead.
 
 **Status: backtest / paper-trading only.** `config.sample.json` is locked to `dry_run: true`.
 
-## How Claude is wired in
+## How the AI is wired in
 
-| Where | What Claude does | File |
+Provider is picked automatically (`selfbot/llm.py`): **Claude** if `ANTHROPIC_API_KEY` is set →
+otherwise **GitHub Models** (free) if `GITHUB_TOKEN` is set → otherwise a built-in rule-based verdict.
+
+| Where | What the AI does | File |
 |---|---|---|
 | GitHub Actions / `./backtest.sh` | Reads the backtest stats and returns a verdict + the single next tuning experiment | `selfbot/claude_review.py` |
 | Dry-run / live bot | Before each entry, sees the last 30 daily candles + indicators and approves or vetoes | `selfbot/claude_gate.py` |
 
-Claude is **never called during backtests or hyperopt** (fast, free, reproducible).
+The AI is **never called during backtests or hyperopt** (fast, free, reproducible).
 Gate modes (`CLAUDE_GATE`): `advisory` (default — logs only), `enforce` (can veto; errors block the trade), `off`.
 
 ## Quick start — on GitHub (no install)
 
-1. Repo **Settings → Secrets and variables → Actions → New repository secret**:
-   `ANTHROPIC_API_KEY` = your key from https://console.anthropic.com
-2. **Actions → Backtest + Claude review → Run workflow** (pick timerange).
-3. Open the run: the summary page shows the Freqtrade metrics and Claude's review.
+1. **Actions → Backtest + AI review → Run workflow** (pick timerange). Nothing to set up:
+   the workflow uses GitHub's built-in token for the free GitHub Models tier.
+2. Open the run: the summary page shows the Freqtrade metrics and the written review
+   (the last line says which model wrote it).
+
+Optional: add a repo secret `ANTHROPIC_API_KEY` to use Claude instead, or a repo variable
+`GITHUB_MODEL` (e.g. `openai/gpt-4.1`) to pick a different free model.
 
 It also runs automatically whenever the strategy, config or `selfbot/` code changes.
 
@@ -29,9 +38,9 @@ It also runs automatically whenever the strategy, config or `selfbot/` code chan
 ```bash
 git clone https://github.com/domiastays/SelfBot.git && cd SelfBot
 ./setup.sh && source .venv/bin/activate
-export ANTHROPIC_API_KEY=sk-ant-...      # optional
-./backtest.sh 20240101 20241231          # downloads data, backtests, Claude review
-./dryrun.sh                              # paper trading with the Claude gate
+export GITHUB_TOKEN=github_pat_...       # optional, free: fine-grained token with "Models: read"
+./backtest.sh 20240101 20241231          # downloads data, backtests, AI review
+./dryrun.sh                              # paper trading with the AI gate
 ```
 
 ## Strategy (`user_data/strategies/FreqtradeDailyHybridStrategy.py`)

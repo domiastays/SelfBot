@@ -10,5 +10,5 @@ mkdir -p user_data/data user_data/logs user_data/backtest_results
 echo
 echo "Done. Next:"
 echo "  source .venv/bin/activate"
-echo "  export ANTHROPIC_API_KEY=sk-ant-...   # optional, enables the Claude review + gate"
+echo "  export GITHUB_TOKEN=github_pat_...    # optional & free (token with Models: read) - enables AI review + gate"
 echo "  ./backtest.sh"
