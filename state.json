@@ -1,0 +1,35 @@
+{
+ "version": 1,
+ "started_at": "2026-10-27T12:11:19+00:00",
+ "start_candle": "2026-10-26 00:00:00+00:00",
+ "wallet_start": 1000.0,
+ "cash": 1000.0,
+ "position": null,
+ "trades": [],
+ "equity": [
+  {
+   "date": "2026-10-26 00:00:00+00:00",
+   "equity": 1000.0,
+   "price": 80147.48
+  }
+ ],
+ "ai_log": [
+  {
+   "date": "2026-10-26 00:00:00+00:00",
+   "kind": "daily_read",
+   "ts": "2026-10-27T12:13:11.918130+00:00",
+   "mode": "enforce",
+   "model": "gemini-3.8-flash",
+   "pair": "BTC/USDT",
+   "rate": 80147.48,
+   "entry_tag": "daily_read (no live signal, hypothetical entry)",
+   "allowed": false,
+   "approve": false,
+   "confidence": 0.92,
+   "reason": "The proposed entry directly contradicts recent price action, which exhibits five consecutive daily candles with lower highs and lower lows into the signal.",
+   "error": null
+  }
+ ],
+ "last_candle": "2026-10-26 00:00:00+00:00",
+ "events": []
+}
