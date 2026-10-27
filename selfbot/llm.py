@@ -9,7 +9,9 @@ Order:
 Env vars:
   LLM_PROVIDER   - force "anthropic", "gemini" or "none" (default: auto)
   CLAUDE_MODEL   - Anthropic model, default "claude-sonnet-5-5"
-  GEMINI_MODEL   - Gemini model, default "gemini-3.8-flash"
+  GEMINI_MODEL   - Gemini model(s), comma-separated, tried in order.
+                   Default "gemini-3.8-flash,gemini-2.5-flash". Busy/rate-limited
+                   answers (429/500/503) are retried with backoff before moving on.
 
 Gemini is called through its OpenAI-compatible endpoint with the standard
 library only, so it needs no extra dependency.
@@ -19,6 +21,8 @@ from __future__ import annotations
 
 import json
 import os
+import time
+import urllib.error
 import urllib.request
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
@@ -42,7 +46,7 @@ def model_name(p: str | None = None) -> str | None:
     if p == "anthropic":
         return os.getenv("CLAUDE_MODEL") or "claude-sonnet-5-5"
     if p == "gemini":
-        return os.getenv("GEMINI_MODEL") or "gemini-3.8-flash"
+        return os.getenv("GEMINI_MODEL") or "gemini-3.8-flash,gemini-2.5-flash"
     return None
 
 
@@ -62,6 +66,24 @@ def complete(system: str, user: str, max_tokens: int = 1500, timeout: int = 90) 
         )
         return msg.content[0].text, f"Claude ({model})"
 
+    errors = []
+    for m in [x.strip() for x in model.split(",") if x.strip()]:
+        for attempt in range(3):
+            try:
+                return _gemini(m, system, user, max_tokens, timeout), f"Gemini ({m}, free tier)"
+            except urllib.error.HTTPError as exc:
+                errors.append(f"{m}: HTTP {exc.code}")
+                if exc.code in (429, 500, 503) and attempt < 2:
+                    time.sleep(15 * (attempt + 1))
+                    continue
+                break  # other errors (e.g. unknown model): try the next model
+            except Exception as exc:
+                errors.append(f"{m}: {exc}")
+                break
+    raise RuntimeError("Gemini unavailable - " + "; ".join(errors))
+
+
+def _gemini(model: str, system: str, user: str, max_tokens: int, timeout: int) -> str:
     body = json.dumps({
         "model": model,
         "max_tokens": max_tokens,
@@ -79,4 +101,4 @@ def complete(system: str, user: str, max_tokens: int = 1500, timeout: int = 90) 
         raise RuntimeError(f"unexpected Gemini response: {raw[:300]!r}") from exc
     if not text:
         raise RuntimeError("Gemini returned an empty answer")
-    return text, f"Gemini ({model}, free tier)"
+    return text
