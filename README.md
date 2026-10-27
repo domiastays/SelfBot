@@ -46,6 +46,19 @@ export GEMINI_API_KEY=...                # optional & free, from aistudio.google
 ./dryrun.sh                              # paper trading with the AI gate
 ```
 
+## Watching and controlling the bot
+
+`./dryrun.sh` starts the bot plus two local web pages (only this computer can open them):
+
+| Page | What it's for |
+|---|---|
+| **SelfBot panel** http://127.0.0.1:8081 | Everything in one place: running / paused / stopped, balance and profit, open trades, every AI decision with its reason, the bot log. Buttons: **Start**, **Pause new buys** (keeps managing open trades), **Resume buys**, **Stop bot**, **Close now** on any open trade, **Force buy**, and the **AI gate** switch (Off / Advisory / Veto, applied live) |
+| **FreqUI** http://127.0.0.1:8080 | Freqtrade's own full dashboard: price charts with entries/exits, trade history, performance |
+
+`./setup.sh` creates a random login for these in `user_data/config.private.json` (never committed)
+and prints it. Show it again with `python -m selfbot.private_config --show`.
+Every action that changes something asks you to confirm first.
+
 ## Strategy (`user_data/strategies/FreqtradeDailyHybridStrategy.py`)
 
 - **Entry:** close > 100-day SMA (market-health gate), EMA9 > EMA21, fresh EMA cross-up or

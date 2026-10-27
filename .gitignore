@@ -222,6 +222,8 @@ __marimo__/
 # SelfBot / Freqtrade runtime data (never commit keys or market data)
 config.json
 config.live.json
+user_data/config.private.json
+user_data/selfbot_control.json
 ci.config.json
 claude_review.md
 backtest_output.txt

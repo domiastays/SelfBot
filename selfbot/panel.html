@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SelfBot Control</title>
+<style>
+:root{
+  --bg:#f6f5f2;--panel:#ffffff;--ink:#1d1d1b;--muted:#6b6a65;--line:#e4e2dc;
+  --accent:#2f5d50;--accent-ink:#ffffff;--good:#1f7a4d;--bad:#b3261e;--warn:#9a6700;
+  --good-bg:#e5f3ea;--bad-bg:#fbe9e7;--warn-bg:#fff4d6;--chip:#efeee9;
+  --radius:10px;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141413;--panel:#1c1c1a;--ink:#ecebe6;--muted:#9a988f;--line:#2e2d2a;
+  --accent:#7fb8a4;--accent-ink:#0f1a16;--good:#6fcf97;--bad:#f28b82;--warn:#f2c14e;
+  --good-bg:#16291f;--bad-bg:#33191a;--warn-bg:#2e2611;--chip:#262623;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar{max-width:1180px;margin:0 auto;padding:14px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+h1{font-size:17px;margin:0;letter-spacing:-.01em}
+main{max-width:1180px;margin:0 auto;padding:16px;display:grid;gap:16px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--chip);color:var(--muted)}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+.pill.run{background:var(--good-bg);color:var(--good)}.pill.pause{background:var(--warn-bg);color:var(--warn)}
+.pill.stop,.pill.off{background:var(--bad-bg);color:var(--bad)}
+.pill.dry{background:var(--chip);color:var(--ink)}
+.spacer{flex:1}
+.muted{color:var(--muted)}
+a{color:var(--accent)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 12px;font-weight:600}
+.controls{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.danger{color:var(--bad)}
+button.small{padding:4px 10px;font-size:12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.help{font-size:12.5px;color:var(--muted);margin:10px 0 0}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.kpi .label{font-size:12px;color:var(--muted)}
+.kpi .val{font:600 22px/1.2 var(--mono);margin-top:4px}
+.pos{color:var(--good)}.neg{color:var(--bad)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.num{font-family:var(--mono);text-align:right;white-space:nowrap}
+th.num{text-align:right}
+tr:last-child td{border-bottom:0}
+.empty{color:var(--muted);padding:14px 0}
+.tag{display:inline-block;padding:1px 7px;border-radius:6px;font-size:11.5px;font-weight:600}
+.tag.ok{background:var(--good-bg);color:var(--good)}.tag.no{background:var(--bad-bg);color:var(--bad)}.tag.na{background:var(--chip);color:var(--muted)}
+.logs{font:12px/1.5 var(--mono);max-height:300px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+.logs .WARNING{color:var(--warn)}.logs .ERROR,.logs .CRITICAL{color:var(--bad)}
+.offline{background:var(--warn-bg);color:var(--warn);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;display:none}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+#toast.show{opacity:1}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);padding:20px;max-width:420px}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+dialog h3{margin:0 0 8px;font-size:16px}
+.scroll{overflow-x:auto}
+main>*,.controls>*,.grid2>*{min-width:0}
+body{overflow-x:hidden}
+@media (max-width:860px){.controls,.grid2{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <h1 id="botname">SelfBot</h1>
+  <span id="state" class="pill off"><span class="dot"></span>Connecting…</span>
+  <span id="dry" class="pill dry" hidden>DRY RUN · fake money</span>
+  <span class="spacer"></span>
+  <span class="muted" id="updated"></span>
+  <a href="http://127.0.0.1:8080" target="_blank" rel="noopener">Open FreqUI ↗</a>
+</div></header>
+
+<main>
+  <div id="offline" class="offline">The bot isn't running, so live data and bot controls are unavailable. Start it with <code>./dryrun.sh</code>. You can still change the AI gate mode below.</div>
+
+  <section class="controls">
+    <div class="card">
+      <h2>Bot</h2>
+      <div class="row">
+        <button id="b-start" class="primary" data-act="start">Start</button>
+        <button id="b-pause" data-act="pause" data-confirm="Pause new buys? Open trades keep being managed (stops and exits still work).">Pause new buys</button>
+        <button id="b-resume" data-act="resume">Resume buys</button>
+        <button id="b-stop" class="danger" data-act="stop" data-confirm="Stop the bot? It stops managing open trades until you press Start again.">Stop bot</button>
+        <button id="b-buy" data-act="buy" data-confirm="Open a trade now on the pair below at market price, skipping the strategy signal?">Force buy</button>
+      </div>
+      <p class="help" id="bot-help">Pause keeps watching open trades; Stop halts everything.</p>
+    </div>
+    <div class="card">
+      <h2>AI gate</h2>
+      <div class="seg" id="gate">
+        <button data-mode="off">Off</button>
+        <button data-mode="advisory">Advisory</button>
+        <button data-mode="enforce">Veto</button>
+      </div>
+      <p class="help" id="gate-help"></p>
+    </div>
+  </section>
+
+  <section class="kpis">
+    <div class="kpi"><div class="label">Balance</div><div class="val" id="k-bal">–</div></div>
+    <div class="kpi"><div class="label">Total profit</div><div class="val" id="k-profit">–</div></div>
+    <div class="kpi"><div class="label">Closed trades</div><div class="val" id="k-trades">–</div></div>
+    <div class="kpi"><div class="label">Win rate</div><div class="val" id="k-win">–</div></div>
+    <div class="kpi"><div class="label">Max drawdown</div><div class="val" id="k-dd">–</div></div>
+  </section>
+
+  <section class="card">
+    <h2>Open trades</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Pair</th><th>Opened</th><th class="num">Entry</th><th class="num">Now</th><th class="num">Stake</th><th class="num">Profit</th><th class="num">Stop</th><th></th></tr></thead>
+      <tbody id="open"></tbody>
+    </table></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card">
+      <h2>AI decisions</h2>
+      <div class="scroll"><table>
+        <thead><tr><th>When</th><th>Verdict</th><th>Reason</th></tr></thead>
+        <tbody id="ai"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>Recent trades</h2>
+      <div class="scroll"><table>
+        <thead><tr><th>Pair</th><th>Closed</th><th class="num">Profit</th><th>Why</th></tr></thead>
+        <tbody id="closed"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Bot log</h2>
+    <div class="logs" id="logs"></div>
+  </section>
+</main>
+
+<dialog id="confirm"><h3>Are you sure?</h3><p id="confirm-text"></p>
+  <div class="row" style="justify-content:flex-end"><button id="c-no">Cancel</button><button id="c-yes" class="primary">Yes, do it</button></div>
+</dialog>
+<div id="toast"></div>
+
+<script>
+const TOKEN = "__TOKEN__";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = (v, d = 2) => (typeof v === "number" && isFinite(v)) ? v.toLocaleString(undefined, {minimumFractionDigits: d, maximumFractionDigits: d}) : "–";
+const pct = v => (typeof v === "number" && isFinite(v)) ? (v > 0 ? "+" : "") + num(v * 100) + "%" : "–";
+const cls = v => typeof v === "number" ? (v > 0 ? "pos" : v < 0 ? "neg" : "") : "";
+const when = s => { if (!s) return "–"; const d = new Date(String(s).replace(" ", "T")); return isNaN(d) ? esc(s) : d.toLocaleString([], {month:"short", day:"numeric", hour:"2-digit", minute:"2-digit"}); };
+let last = null, pair = "BTC/USDT";
+
+function toast(msg){ const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 3500); }
+
+function ask(text){
+  return new Promise(res => {
+    const d = $("confirm"); $("confirm-text").textContent = text; d.showModal();
+    $("c-yes").onclick = () => { d.close(); res(true); };
+    $("c-no").onclick = () => { d.close(); res(false); };
+  });
+}
+
+async function act(body){
+  try {
+    const r = await fetch("/api/action", {method:"POST", headers:{"Content-Type":"application/json","X-Panel-Token":TOKEN}, body: JSON.stringify(body)});
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || "Failed");
+    toast(j.result?.message || j.result?.status || "Done");
+  } catch (e) { toast(e.message); }
+  refresh();
+}
+
+document.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", async () => {
+  const a = b.dataset.act;
+  let text = b.dataset.confirm;
+  if (a === "buy") text = `Open a trade on ${pair} now at market price, skipping the strategy signal? (Dry run: fake money.)`;
+  if (text && !(await ask(text))) return;
+  act(a === "buy" ? {action: a, pair} : {action: a});
+}));
+document.querySelectorAll("#gate button").forEach(b => b.addEventListener("click", async () => {
+  const m = b.dataset.mode;
+  if (m === "enforce" && !(await ask("Let the AI veto entries? If the AI is unreachable, entries are blocked."))) return;
+  act({action: "gate", mode: m});
+}));
+document.addEventListener("click", async e => {
+  const b = e.target.closest("[data-close]"); if (!b) return;
+  if (!(await ask(`Close trade #${b.dataset.close} (${b.dataset.pair}) now at market price?`))) return;
+  act({action: "close", trade_id: Number(b.dataset.close)});
+});
+
+function render(s){
+  last = s;
+  const c = s.config || {};
+  pair = (s.whitelist && s.whitelist.whitelist && s.whitelist.whitelist[0]) || pair;
+  $("botname").textContent = c.bot_name || "SelfBot";
+  $("offline").style.display = s.online ? "none" : "block";
+  $("dry").hidden = !(s.online && c.dry_run);
+
+  const st = $("state"); let label = "Offline", k = "off";
+  const paused = s.online && (c.state === "paused" || (c.state === "running" && c.max_open_trades === 0));
+  if (s.online) {
+    if (paused) { label = "Running · buys paused"; k = "pause"; }
+    else if (c.state === "running") { label = "Running"; k = "run"; }
+    else { label = "Stopped"; k = "stop"; }
+  }
+  st.className = "pill " + k; st.innerHTML = `<span class="dot"></span>${label}`;
+  $("b-start").disabled = !s.online || c.state === "running";
+  $("b-stop").disabled = !s.online || c.state !== "running";
+  $("b-pause").disabled = !s.online || c.state !== "running" || paused;
+  $("b-resume").disabled = !s.online || !paused;
+  $("b-buy").disabled = !s.online || c.state !== "running" || c.force_entry_enable === false;
+  $("b-buy").title = c.force_entry_enable === false ? "Force buy is turned off in the bot's config" : "";
+
+  const g = s.gate || {};
+  document.querySelectorAll("#gate button").forEach(b => b.classList.toggle("on", b.dataset.mode === g.mode));
+  const src = g.provider ? `${g.provider === "gemini" ? "Gemini" : "Claude"} (${esc(g.model)})` : null;
+  $("gate-help").innerHTML = !src
+    ? "No AI key found on this computer (set GEMINI_API_KEY before starting), so the gate is inactive."
+    : {off: `Off: entries go through without asking ${src}.`,
+       advisory: `Advisory: ${src} reviews every entry and logs its opinion, but never blocks.`,
+       enforce: `Veto: ${src} must approve each entry; if it says no or can't be reached, the trade is skipped.`}[g.mode] || "";
+
+  const p = s.profit || {}, bal = s.balance || {};
+  $("k-bal").textContent = bal.total != null ? `${num(bal.total)} ${bal.stake || ""}` : "–";
+  const pr = $("k-profit"); const pratio = p.profit_all_ratio ?? (p.profit_all_percent != null ? p.profit_all_percent / 100 : null);
+  pr.textContent = p.profit_all_coin != null ? `${num(p.profit_all_coin)} (${pct(pratio)})` : "–"; pr.className = "val " + cls(p.profit_all_coin);
+  $("k-trades").textContent = p.closed_trade_count ?? "–";
+  const w = p.winning_trades, l = p.losing_trades;
+  $("k-win").textContent = (w + l) > 0 ? num(w / (w + l) * 100, 0) + "%" : "–";
+  $("k-dd").textContent = p.max_drawdown != null ? pct(-Math.abs(p.max_drawdown)) : "–";
+
+  const open = Array.isArray(s.open) ? s.open : [];
+  $("open").innerHTML = open.length ? open.map(t => `<tr>
+      <td><b>${esc(t.pair)}</b><div class="muted">#${esc(t.trade_id)} ${esc(t.enter_tag || "")}</div></td>
+      <td>${when(t.open_date)}</td><td class="num">${num(t.open_rate)}</td><td class="num">${num(t.current_rate)}</td>
+      <td class="num">${num(t.stake_amount)}</td>
+      <td class="num ${cls(t.profit_abs)}">${num(t.profit_abs)}<div>${pct(t.profit_ratio)}</div></td>
+      <td class="num">${num(t.stop_loss_abs)}</td>
+      <td><button class="small danger" data-close="${esc(t.trade_id)}" data-pair="${esc(t.pair)}">Close now</button></td></tr>`).join("")
+    : `<tr><td colspan="8" class="empty">${s.online ? "No open trades. The bot is waiting for an entry signal on the daily candle." : "–"}</td></tr>`;
+
+  const ai = g.decisions || [];
+  $("ai").innerHTML = ai.length ? ai.slice(0, 25).map(d => {
+      const v = d.error ? `<span class="tag na">Error</span>` : d.approve === true ? `<span class="tag ok">Approve</span>` : d.approve === false ? `<span class="tag no">Reject</span>` : `<span class="tag na">${esc(d.mode)}</span>`;
+      const res = d.allowed ? "trade allowed" : "trade blocked";
+      return `<tr><td>${when(d.ts)}<div class="muted">${esc(d.pair)}</div></td><td>${v}<div class="muted">${res}</div></td><td>${esc(d.reason || d.error || "")}</td></tr>`;
+    }).join("")
+    : `<tr><td colspan="3" class="empty">No AI decisions yet. One appears each time the strategy wants to buy.</td></tr>`;
+
+  const closed = ((s.trades && s.trades.trades) || []).filter(t => !t.is_open).reverse().slice(0, 15);
+  $("closed").innerHTML = closed.length ? closed.map(t => `<tr><td><b>${esc(t.pair)}</b></td><td>${when(t.close_date)}</td>
+      <td class="num ${cls(t.profit_abs)}">${pct(t.profit_ratio)}</td><td>${esc(t.exit_reason || "")}</td></tr>`).join("")
+    : `<tr><td colspan="4" class="empty">${s.online ? "No closed trades yet." : "–"}</td></tr>`;
+
+  const logs = (s.logs && s.logs.logs) || [];
+  const box = $("logs"), atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 8;
+  box.innerHTML = logs.length ? logs.map(l => `<div class="${esc(l[3])}">${esc(l[0])}  ${esc(l[3])}  ${esc(l[4])}</div>`).join("") : `<span class="muted">${s.online ? "No log lines yet." : "Bot offline."}</span>`;
+  if (atBottom) box.scrollTop = box.scrollHeight;
+
+  $("updated").textContent = "Updated " + new Date().toLocaleTimeString();
+}
+
+async function refresh(){
+  try { render(await (await fetch("/api/state", {cache: "no-store"})).json()); }
+  catch { $("state").className = "pill off"; $("state").innerHTML = '<span class="dot"></span>Panel unreachable'; }
+}
+refresh(); setInterval(refresh, 5000);
+</script>
+</body>
+</html>

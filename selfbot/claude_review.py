@@ -39,6 +39,8 @@ Write a short markdown report with these sections:
 ## Next experiment  (the single parameter change to test next, with exact values, and the
    freqtrade command to run it; mention hyperopt only if it is the better next step)
 ## Before going live  (2-3 bullets)
+`current_parameters` holds the values used in this backtest: never suggest a value that is
+already set; propose a change FROM the current value TO a new one.
 Be direct and do not invent numbers that are not in the data. Small samples deserve skepticism."""
 
 KEYS = [
@@ -60,8 +62,29 @@ def load_latest_stats(results_dir: Path) -> dict:
     return strategy
 
 
+def current_parameters() -> dict:
+    """Parameter values the strategy used, so the review never suggests what is already set."""
+    import re
+
+    src = Path("user_data/strategies/FreqtradeDailyHybridStrategy.py")
+    try:
+        text = src.read_text()
+    except OSError:
+        return {}
+    params = {m[0]: float(m[1]) if "." in m[1] else int(m[1])
+              for m in re.findall(r"^\s+(\w+)\s*=\s*\w*Parameter\(.*?default=([\d.]+)", text, re.M)}
+    for name in ("stoploss",):
+        m = re.search(rf"^\s+{name}\s*=\s*(-?[\d.]+)", text, re.M)
+        if m:
+            params[name] = float(m.group(1))
+    return params
+
+
 def summarize(strategy: dict) -> dict:
     out = {k: strategy.get(k) for k in KEYS if k in strategy}
+    params = current_parameters()
+    if params:
+        out["current_parameters"] = params
     trades = strategy.get("trades", [])
     if trades:
         profits = sorted(t.get("profit_ratio", 0) for t in trades)
