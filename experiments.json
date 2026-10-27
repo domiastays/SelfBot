@@ -1,0 +1,13 @@
+{
+  "_help": "Each variant is backtested on each period. Variant params override the strategy defaults (buy: ema_short, ema_long, rsi_buy_max; sell: rsi_sell_min, atr_multiplier). Edit, push, and the workflow re-runs the comparison.",
+  "periods": {
+    "2023": "20230101-20231231",
+    "2024": "20240101-20241231",
+    "2025": "20250101-20251231",
+    "2026 YTD": "20260101-"
+  },
+  "variants": {
+    "baseline 9/21": {},
+    "slower 10/35": {"buy": {"ema_short": 10, "ema_long": 35}}
+  }
+}

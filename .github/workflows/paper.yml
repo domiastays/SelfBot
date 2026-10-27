@@ -1,0 +1,83 @@
+name: Paper trader (live dashboard)
+
+# Runs the strategy on live data with fake money and publishes the dashboard
+# (GitHub Pages, branch `dashboard-data`). Scheduled runs only fire from the
+# default branch (main); pushes to the paper-trader files run it from any branch.
+on:
+  schedule:
+    - cron: "7 * * * *"   # hourly at :07 (daily candles close 00:00 UTC; first run after is 00:07)
+  workflow_dispatch:
+  push:
+    paths:
+      - "selfbot/paper.py"
+      - "dashboard/**"
+      - ".github/workflows/paper.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: paper-trader
+  cancel-in-progress: false
+
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+      CLAUDE_GATE: ${{ vars.CLAUDE_GATE || 'advisory' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out dashboard data
+        uses: actions/checkout@v4
+        with:
+          ref: dashboard-data
+          path: site
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: Download latest BTC/USDT daily candles
+        run: |
+          DL_START=$(date -u -d "-420 days" +%Y%m%d)
+          # Keep the exchange the paper account started on, so prices stay consistent
+          PREF=$(jq -r '.exchange // empty' site/status.json 2>/dev/null || true)
+          for EX in $PREF binanceus okx gate binance; do
+            jq --arg ex "$EX" '.exchange.name = $ex' config.sample.json > ci.config.json
+            if freqtrade download-data -c ci.config.json --timerange "${DL_START}-" --timeframes 1d \
+                 && ls user_data/data/$EX/BTC_USDT-1d.* >/dev/null 2>&1; then
+              echo "EXCHANGE=$EX" >> "$GITHUB_ENV"; echo "Using $EX"; exit 0
+            fi
+          done
+          echo "::error::No exchange returned data"; exit 1
+
+      - name: Run paper trader
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
+        run: |
+          python -m selfbot.paper -c ci.config.json \
+            --data "$(ls user_data/data/$EXCHANGE/BTC_USDT-1d.* | head -1)" \
+            --state site/state.json --status site/status.json --exchange "$EXCHANGE"
+
+      - name: Publish dashboard
+        run: |
+          cp dashboard/index.html site/index.html
+          touch site/.nojekyll
+          cd site
+          git config user.name "selfbot"
+          git config user.email "selfbot@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && { echo "No changes"; exit 0; }
+          git commit -q -m "Paper trader update $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3 4 5; do git pull -q --rebase origin dashboard-data && git push -q origin HEAD:dashboard-data && exit 0; sleep 5; done
+          exit 1

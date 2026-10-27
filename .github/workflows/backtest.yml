@@ -14,10 +14,11 @@ on:
       - "user_data/strategies/**"
       - "config.sample.json"
       - "selfbot/**"
+      - "experiments.json"
       - ".github/workflows/backtest.yml"
 
 permissions:
-  contents: read
+  contents: write   # publishes compare.json to the dashboard-data branch
 
 jobs:
   backtest:
@@ -42,7 +43,9 @@ jobs:
       - name: Download BTC/USDT daily candles
         run: |
           START="${TIMERANGE%%-*}"
-          # 300 extra days so EMAs / 100-day SMA are warmed up before the test window
+          # earliest of the main timerange and the experiment periods (2023), minus
+          # 300 days so EMAs / 100-day SMA are warmed up before the test window
+          [ "$START" -gt 20230101 ] && START=20230101
           DL_START=$(date -u -d "${START} -300 days" +%Y%m%d)
           if [ "$EXCHANGE_CHOICE" = "auto" ]; then CANDIDATES="binance binanceus okx gate"; else CANDIDATES="$EXCHANGE_CHOICE"; fi
           for EX in $CANDIDATES; do
@@ -66,6 +69,15 @@ jobs:
             sed -n '/SUMMARY METRICS/,$p' backtest_output.txt | sed 's/\x1b\[[0-9;]*m//g'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Compare strategy variants (experiments.json)
+        run: |
+          python -m selfbot.experiments -c ci.config.json --out-json compare.json --out-md compare.md
+          cat compare.md >> "$GITHUB_STEP_SUMMARY"
+          python - <<'EOF'
+          s = open("compare.md").read().replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+          print(f"::notice title=SelfBot experiment comparison::{s}")
+          EOF
 
       - name: AI review
         env:
@@ -94,6 +106,21 @@ jobs:
           CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
         run: python -m selfbot.gate_selftest --data "$(ls user_data/data/$EXCHANGE/BTC_USDT-1d.* | head -1)"
 
+      - name: Publish comparison to dashboard
+        if: github.event_name == 'workflow_dispatch' || github.ref_name == 'main' || github.ref_name == 'claude/selfbot-setup'
+        run: |
+          git fetch -q origin dashboard-data || exit 0
+          git worktree add -q -B dashboard-data site origin/dashboard-data
+          cp compare.json site/compare.json
+          sed '/^### Trades/,$d' claude_review.md > site/review.md
+          cd site
+          git config user.name "selfbot"; git config user.email "selfbot@users.noreply.github.com"
+          git add compare.json review.md
+          git diff --cached --quiet && exit 0
+          git commit -q -m "Experiment comparison $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3 4 5; do git pull -q --rebase origin dashboard-data && git push -q origin HEAD:dashboard-data && exit 0; sleep 5; done
+          exit 1
+
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
@@ -102,5 +129,7 @@ jobs:
           path: |
             backtest_output.txt
             claude_review.md
+            compare.md
+            compare.json
             user_data/backtest_results/
           if-no-files-found: warn

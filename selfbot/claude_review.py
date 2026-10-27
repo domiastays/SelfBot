@@ -103,7 +103,19 @@ def summarize(strategy: dict) -> dict:
 def ask_llm(summary: dict) -> tuple[str, str]:
     from selfbot.llm import complete
 
-    return complete(RUBRIC, "Backtest results (JSON):\n" + json.dumps(summary, default=str, indent=1))
+    prompt = "Backtest results (JSON):\n" + json.dumps(summary, default=str, indent=1)
+    system = RUBRIC
+    cmp = Path("compare.json")
+    if cmp.exists():
+        data = json.loads(cmp.read_text())
+        prompt += ("\n\nMulti-period comparison of strategy variants (profit_on_stake = profit on the "
+                   "100 USDT stake per trade; market_change = BTC buy & hold):\n"
+                   + json.dumps({k: data[k] for k in ("variants", "periods", "results", "totals")}, default=str))
+        system += ("\n\nA multi-period comparison of variants is also given. Add a section\n"
+                   "## Variant comparison  (which variant is better across ALL periods, not just one year; "
+                   "say clearly whether the change should be adopted, and cite the numbers)\n"
+                   "and base the Next experiment on the winning variant.")
+    return complete(system, prompt)
 
 
 def rule_based_review(s: dict) -> str:
