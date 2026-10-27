@@ -18,7 +18,6 @@ on:
 
 permissions:
   contents: read
-  models: read   # lets the built-in GITHUB_TOKEN use the free GitHub Models tier
 
 jobs:
   backtest:
@@ -70,12 +69,13 @@ jobs:
 
       - name: AI review
         env:
-          # Free by default: GitHub Models via the built-in token, no secret needed.
-          # Optional: add an ANTHROPIC_API_KEY secret to use Claude instead.
-          GITHUB_TOKEN: ${{ github.token }}
-          GITHUB_MODEL: ${{ vars.GITHUB_MODEL || 'openai/gpt-4o-mini' }}
+          # Free: add a GEMINI_API_KEY secret (aistudio.google.com, no card needed).
+          # Optional, paid: an ANTHROPIC_API_KEY secret uses Claude instead.
+          # With neither, a rule-based verdict is written.
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL || 'claude-sonnet-5-5' }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
         run: |
           python -m selfbot.claude_review --out claude_review.md
           cat claude_review.md >> "$GITHUB_STEP_SUMMARY"

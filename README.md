@@ -3,15 +3,16 @@
 Autonomous daily BTC/USDT trading bot: a Freqtrade trend-following strategy with an AI
 backtest analyst and (optionally) a second-opinion gate on every trade.
 
-**No paid API key needed.** The AI parts use the free [GitHub Models](https://docs.github.com/en/github-models)
-tier by default. Add an `ANTHROPIC_API_KEY` only if you want Claude instead.
+**No paid API key needed.** The AI parts use Google Gemini's free tier (a free key from
+[Google AI Studio](https://aistudio.google.com/apikey), no card). Without any key the bot
+still writes a rule-based verdict. Add an `ANTHROPIC_API_KEY` only if you want Claude instead.
 
 **Status: backtest / paper-trading only.** `config.sample.json` is locked to `dry_run: true`.
 
 ## How the AI is wired in
 
 Provider is picked automatically (`selfbot/llm.py`): **Claude** if `ANTHROPIC_API_KEY` is set →
-otherwise **GitHub Models** (free) if `GITHUB_TOKEN` is set → otherwise a built-in rule-based verdict.
+otherwise **Gemini** (free) if `GEMINI_API_KEY` is set → otherwise a built-in rule-based verdict.
 
 | Where | What the AI does | File |
 |---|---|---|
@@ -23,13 +24,15 @@ Gate modes (`CLAUDE_GATE`): `advisory` (default — logs only), `enforce` (can v
 
 ## Quick start — on GitHub (no install)
 
-1. **Actions → Backtest + AI review → Run workflow** (pick timerange). Nothing to set up:
-   the workflow uses GitHub's built-in token for the free GitHub Models tier.
-2. Open the run: the summary page shows the Freqtrade metrics and the written review
+1. Get a free key at https://aistudio.google.com/apikey (Google account, no card).
+2. Repo **Settings → Secrets and variables → Actions → New repository secret**:
+   `GEMINI_API_KEY` = that key.
+3. **Actions → Backtest + AI review → Run workflow** (pick timerange).
+4. Open the run: the summary page shows the Freqtrade metrics and the written review
    (the last line says which model wrote it).
 
-Optional: add a repo secret `ANTHROPIC_API_KEY` to use Claude instead, or a repo variable
-`GITHUB_MODEL` (e.g. `openai/gpt-4.1`) to pick a different free model.
+Skip steps 1-2 and you still get a rule-based verdict. Optional: a repo variable `GEMINI_MODEL`
+picks a different Gemini model; a secret `ANTHROPIC_API_KEY` switches to Claude.
 
 It also runs automatically whenever the strategy, config or `selfbot/` code changes.
 
@@ -38,7 +41,7 @@ It also runs automatically whenever the strategy, config or `selfbot/` code chan
 ```bash
 git clone https://github.com/domiastays/SelfBot.git && cd SelfBot
 ./setup.sh && source .venv/bin/activate
-export GITHUB_TOKEN=github_pat_...       # optional, free: fine-grained token with "Models: read"
+export GEMINI_API_KEY=...                # optional & free, from aistudio.google.com
 ./backtest.sh 20240101 20241231          # downloads data, backtests, AI review
 ./dryrun.sh                              # paper trading with the AI gate
 ```

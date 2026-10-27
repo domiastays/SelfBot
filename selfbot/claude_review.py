@@ -6,8 +6,8 @@ Usage:
     python -m selfbot.claude_review --out review.md
 
 The written review comes from the first available provider (see selfbot/llm.py):
-Claude if ANTHROPIC_API_KEY is set, otherwise the free GitHub Models tier via
-GITHUB_TOKEN. If neither works, a rule-based verdict against the same targets is
+Claude if ANTHROPIC_API_KEY is set, otherwise Gemini's free tier via
+GEMINI_API_KEY. If neither works, a rule-based verdict against the same targets is
 written instead, so every run gets a verdict and no paid key is required.
 """
 

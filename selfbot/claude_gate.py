@@ -5,8 +5,7 @@ Before the bot opens a position (dry-run or live only), the strategy sends
 Claude the last 30 daily candles plus indicators and asks for a JSON verdict.
 
 The model comes from selfbot/llm.py: Claude if ANTHROPIC_API_KEY is set,
-otherwise the free GitHub Models tier if GITHUB_TOKEN is set (a GitHub personal
-access token with the "Models: read" permission works locally).
+otherwise Gemini's free tier if GEMINI_API_KEY is set.
 
 Modes (env CLAUDE_GATE):
   off       - never call a model (also the result when no provider is configured)
@@ -14,8 +13,8 @@ Modes (env CLAUDE_GATE):
   enforce   - the model can veto entries. Any error -> trade is blocked (fail closed)
 
 Other env vars:
-  ANTHROPIC_API_KEY / GITHUB_TOKEN - one of them is needed unless CLAUDE_GATE=off
-  CLAUDE_MODEL / GITHUB_MODEL      - model overrides, see selfbot/llm.py
+  ANTHROPIC_API_KEY / GEMINI_API_KEY - one of them is needed unless CLAUDE_GATE=off
+  CLAUDE_MODEL / GEMINI_MODEL      - model overrides, see selfbot/llm.py
   CLAUDE_GATE_LOG     - JSONL decision log, default user_data/logs/claude_gate.jsonl
 """
 
@@ -58,7 +57,7 @@ class ClaudeGate:
         from selfbot.llm import model_name, provider
 
         if provider() is None:
-            logger.warning("ClaudeGate: no ANTHROPIC_API_KEY or GITHUB_TOKEN set - gate disabled.")
+            logger.warning("ClaudeGate: no ANTHROPIC_API_KEY or GEMINI_API_KEY set - gate disabled.")
             return None
 
         gate = cls(
