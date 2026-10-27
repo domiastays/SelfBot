@@ -13,37 +13,35 @@
 | Best / worst trade | 40.0% / -8.12% |
 
 ## Verdict
-NEEDS TUNING — The strategy is profitable (+4.68% in 2024) with low drawdown (2.28%), but severely underperforms holding BTC (+112.50%), has a low win rate (30%), and depends entirely on two large winner trades.
+NEEDS TUNING — While profitable (+4.68% in 2024) with tight risk management (2.28% max drawdown), the strategy drastically underperforms BTC buy & hold (+112.50%), produces few trades (10), and relies entirely on two large winners.
 
 ## What the numbers say
-- **Underperformed Buy & Hold**: Earned +4.68% (+46.75 USDT) over 365 days while BTC market benchmark rose +112.50%.
-- **Low win rate**: Won only 3 out of 10 trades (30% win rate), with 7 losing trades.
-- **Extreme trade concentration**: The top 2 trades accounted for 171% of total net profits (79.99 USDT profit on ROI exits vs 46.75 USDT total strategy profit).
-- **Controlled downside**: Max account drawdown was kept to 2.28% (23.59 USDT), keeping the Profit Factor at 2.36 due to large 40% ROI caps.
-- **Trade frequency**: Executed 10 trades in 2024 with an average hold time of 15 days, matching the expected range (8–30 trades/year) for a daily timeframe strategy.
+- **Vastly Underperformed Market:** Returned +4.68% ($46.75) in 2024 vs. BTC buy-and-hold gain of +112.50%.
+- **Fragile Profit Distribution:** Top 2 trades generated $79.99 in ROI exits (171% of total net profits); the remaining 8 trades produced a net loss of -$33.24.
+- **Low Win Rate & Low Frequency:** Achieved a 30.0% win rate across only 10 trades (3 wins, 7 losses), averaging 15 days per holding.
+- **Solid Risk Control:** Max account drawdown was limited to 2.28% ($23.59), yielding a Profit Factor of 2.36 driven by the +40% ROI exits.
 
 ## Variant comparison
-- **Winning variant**: **Baseline (9/21)** is vastly superior to Slower (10/35) across all multi-year evaluation periods.
-- **Cumulative profit on stake**: Baseline generated **0.8271** (82.71%) total return on stake across 29 trades, compared to **0.2215** (22.15%) across 27 trades for Slower (10/35).
-- **Consistency**: Baseline had 1 losing period (2025: -0.1306 stake profit) vs 2 losing periods for Slower (10/35) (2025: -0.0091, 2026 YTD: -0.0164).
-- **Decision**: **Do not adopt the 10/35 change.** Retain the baseline (9/21) foundation for subsequent tests.
+- **Winning Variant:** `baseline 9/21` is significantly better than `slower 10/35` across all tested periods.
+- **Multi-Period Summary:**
+  - `baseline 9/21`: +0.8271 total stake profit across 29 trades, 1 losing period (2025: -0.1306).
+  - `slower 10/35`: +0.2215 total stake profit across 27 trades, 2 losing periods (2025: -0.0091, 2026 YTD: -0.0164).
+- **Bull Market Capture:** Baseline delivered far superior gains in 2023 (+0.4364 vs +0.0933) and 2024 (+0.4675 vs +0.1537).
+- **Decision:** **Do NOT adopt the 10/35 variant.** Retain `baseline 9/21` as the foundation for future testing.
 
 ## Next experiment
-Following the tuning sequence (Step 1: EMA short/long settings), test a standard MACD EMA pairing (`ema_short`: 12, `ema_long`: 26) to see if smoother trend signals reduce false entries without slowing reaction time too drastically.
+Slowing the EMAs (10/35) degraded performance, indicating the strategy needs earlier trend responsiveness rather than slower filtering. Following Tuning Step 1 (EMA parameters), test a faster short EMA by changing `ema_short` from 9 to 7 while holding `ema_long` at 21.
 
-- **Current parameters**: `ema_short`: 9, `ema_long`: 21
-- **Proposed parameters**: `ema_short`: 12, `ema_long`: 26
-
-**Freqtrade command:**
+**Command:**
 ```bash
-freqtrade backtesting --strategy FreqtradeDailyHybridStrategy --timeframe 1d --timerange 20240101-20241231
+freqtrade backtesting --strategy FreqtradeDailyHybridStrategy --timerange 20240101-20241231 --timeframe 1d --override-param buy.ema_short=7
 ```
-*(Update `ema_short = 12` and `ema_long = 26` inside the strategy file before running).*
+*(If single manual parameter adjustments continue to yield low trade volume, running `freqtrade hyperopt` restricted to the space `buy.ema_short` [5–15] and `buy.ema_long` [20–50] across 2023–2024 data is the best next step).*
 
 ## Before going live
-- **Expand sample size**: 10 trades per year is a small statistical sample; run multi-year backtests across complete bull/bear cycles (e.g., 2020–2024) to confirm expectancy.
-- **Address market capture**: The current rules stay out of the market during major rallies; entries need refinement so the strategy captures a higher portion of BTC trend movements.
-- **Test out-of-sample data**: Validate any tuned configuration against unseen periods (such as 2025–2026 data) to verify the strategy isn't overfitting to 2024 ROI targets.
+- **Evaluate Multi-Year Stability:** Verify that parameter improvements hold across 2023–2026 multi-period runs, avoiding single-year overfitting.
+- **Expand Asset Universe:** Test the logic on additional liquid pairs (e.g., ETH/USDT, SOL/USDT) to validate statistical significance beyond 10 daily BTC trades per year.
+- **Reduce Single-Exit Dependence:** Refine trailing stops or profit-taking criteria so net profitability isn't dependent on hitting a +40% ROI ceiling twice a year.
 
 _Review by: Gemini (gemini-3.5-flash, free tier)_
 
