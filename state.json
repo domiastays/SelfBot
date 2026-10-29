@@ -16,6 +16,11 @@
    "date": "2026-10-27 00:00:00+00:00",
    "equity": 1000.0,
    "price": 80913.98
+  },
+  {
+   "date": "2026-10-28 00:00:00+00:00",
+   "equity": 1000.0,
+   "price": 81341.7
   }
  ],
  "ai_log": [
@@ -48,8 +53,23 @@
    "confidence": 0.85,
    "reason": "The signal contradicts the recent short-term price action, which features a series of lower highs and lower lows leading into the trigger.",
    "error": null
+  },
+  {
+   "date": "2026-10-28 00:00:00+00:00",
+   "kind": "daily_read",
+   "ts": "2026-10-29T01:48:57.796693+00:00",
+   "mode": "enforce",
+   "model": "gemini-3.8-flash",
+   "pair": "BTC/USDT",
+   "rate": 81341.7,
+   "entry_tag": "daily_read (no live signal, hypothetical entry)",
+   "allowed": false,
+   "approve": false,
+   "confidence": 0.85,
+   "reason": "The market is in an active multi-day downtrend with the fast EMA still below the slow EMA and consecutive lower highs over the past week.",
+   "error": null
   }
  ],
- "last_candle": "2026-10-27 00:00:00+00:00",
+ "last_candle": "2026-10-28 00:00:00+00:00",
  "events": []
 }
