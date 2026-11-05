@@ -51,6 +51,11 @@
    "date": "2026-11-03 00:00:00+00:00",
    "equity": 1000.0,
    "price": 77436.03
+  },
+  {
+   "date": "2026-11-04 00:00:00+00:00",
+   "equity": 1000.0,
+   "price": 80478.4
   }
  ],
  "ai_log": [
@@ -188,8 +193,23 @@
    "confidence": null,
    "reason": null,
    "error": "RuntimeError('Gemini unavailable - gemini-3.8-flash: HTTP 503; gemini-3.8-flash: HTTP 503; gemini-3.8-flash: HTTP 503; found models: gemini-2.5-flash, gemini-flash-latest, gemini-flash-lite-latest, gemini-2.5-flash-lite, gemini-3-flash-preview, gemini-3.1-flash-lite-preview, gemini-3.1-flash-lite, gemini-3.5-flash; gemini-2.5-flash: HTTP 404; gemini-flash-latest: HTTP 503; gemini-flash-latest: HTTP 503; gemini-flash-latest: HTTP 503; gemini-3.5-flash: HTTP 503; gemini-3.5-flash: HTTP 503; gemini-3.5-flash: HTTP 503')"
+  },
+  {
+   "date": "2026-11-04 00:00:00+00:00",
+   "kind": "daily_read",
+   "ts": "2026-11-05T06:39:06.809201+00:00",
+   "mode": "enforce",
+   "model": "gemini-3.8-flash",
+   "pair": "BTC/USDT",
+   "rate": 80478.4,
+   "entry_tag": "daily_read (no live signal, hypothetical entry)",
+   "allowed": false,
+   "approve": false,
+   "confidence": 0.85,
+   "reason": "The entry is driven by a single outsized candle with a $5,445 range (more than 2.5x recent ATR) snapping out of a multi-week downtrend, presenting significant mean-reversion risk.",
+   "error": null
   }
  ],
- "last_candle": "2026-11-03 00:00:00+00:00",
+ "last_candle": "2026-11-04 00:00:00+00:00",
  "events": []
 }
