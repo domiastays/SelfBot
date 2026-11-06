@@ -56,6 +56,11 @@
    "date": "2026-11-04 00:00:00+00:00",
    "equity": 1000.0,
    "price": 80478.4
+  },
+  {
+   "date": "2026-11-05 00:00:00+00:00",
+   "equity": 1000.0,
+   "price": 76106.94
   }
  ],
  "ai_log": [
@@ -208,8 +213,23 @@
    "confidence": 0.85,
    "reason": "The entry is driven by a single outsized candle with a $5,445 range (more than 2.5x recent ATR) snapping out of a multi-week downtrend, presenting significant mean-reversion risk.",
    "error": null
+  },
+  {
+   "date": "2026-11-05 00:00:00+00:00",
+   "kind": "daily_read",
+   "ts": "2026-11-06T02:22:42.256487+00:00",
+   "mode": "enforce",
+   "model": "gemini-3.8-flash",
+   "pair": "BTC/USDT",
+   "rate": 76106.94,
+   "entry_tag": "daily_read (no live signal, hypothetical entry)",
+   "allowed": false,
+   "approve": false,
+   "confidence": 0.95,
+   "reason": "Price closed below the trend SMA following a sharp rejection with ATR spiking to a multi-week high of 2436.7.",
+   "error": null
   }
  ],
- "last_candle": "2026-11-04 00:00:00+00:00",
+ "last_candle": "2026-11-05 00:00:00+00:00",
  "events": []
 }
