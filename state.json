@@ -61,6 +61,11 @@
    "date": "2026-11-05 00:00:00+00:00",
    "equity": 1000.0,
    "price": 76106.94
+  },
+  {
+   "date": "2026-11-06 00:00:00+00:00",
+   "equity": 1000.0,
+   "price": 75855.39
   }
  ],
  "ai_log": [
@@ -228,8 +233,23 @@
    "confidence": 0.95,
    "reason": "Price closed below the trend SMA following a sharp rejection with ATR spiking to a multi-week high of 2436.7.",
    "error": null
+  },
+  {
+   "date": "2026-11-06 00:00:00+00:00",
+   "kind": "daily_read",
+   "ts": "2026-11-07T02:51:25.189165+00:00",
+   "mode": "enforce",
+   "model": "gemini-3.8-flash",
+   "pair": "BTC/USDT",
+   "rate": 75855.39,
+   "entry_tag": "daily_read (no live signal, hypothetical entry)",
+   "allowed": false,
+   "approve": false,
+   "confidence": 0.9,
+   "reason": "The long entry contradicts recent price action, which shows a strong downtrend with lower highs and price falling below the trend SMA.",
+   "error": null
   }
  ],
- "last_candle": "2026-11-05 00:00:00+00:00",
+ "last_candle": "2026-11-06 00:00:00+00:00",
  "events": []
 }
