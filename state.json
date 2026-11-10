@@ -76,6 +76,11 @@
    "date": "2026-11-08 00:00:00+00:00",
    "equity": 1000.0,
    "price": 74826.95
+  },
+  {
+   "date": "2026-11-09 00:00:00+00:00",
+   "equity": 1000.0,
+   "price": 75374.15
   }
  ],
  "ai_log": [
@@ -288,8 +293,23 @@
    "confidence": 0.95,
    "reason": "Price is in a clear downtrend below the trend SMA (77,343.35) with bearishly aligned EMAs and lower lows into the trigger price.",
    "error": null
+  },
+  {
+   "date": "2026-11-09 00:00:00+00:00",
+   "kind": "daily_read",
+   "ts": "2026-11-10T01:37:43.550831+00:00",
+   "mode": "enforce",
+   "model": "gemini-3.8-flash",
+   "pair": "BTC/USDT",
+   "rate": 75374.15,
+   "entry_tag": "daily_read (no live signal, hypothetical entry)",
+   "allowed": false,
+   "approve": false,
+   "confidence": 0.95,
+   "reason": "The signal contradicts recent price action, which shows a persistent downtrend with consecutive lower highs while price remains below the trend SMA.",
+   "error": null
   }
  ],
- "last_candle": "2026-11-08 00:00:00+00:00",
+ "last_candle": "2026-11-09 00:00:00+00:00",
  "events": []
 }
