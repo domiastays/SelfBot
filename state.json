@@ -91,6 +91,11 @@
    "date": "2026-11-11 00:00:00+00:00",
    "equity": 1000.0,
    "price": 74016.25
+  },
+  {
+   "date": "2026-11-12 00:00:00+00:00",
+   "equity": 1000.0,
+   "price": 71427.63
   }
  ],
  "ai_log": [
@@ -348,8 +353,23 @@
    "confidence": 0.95,
    "reason": "The proposed entry contradicts recent price action, which exhibits a clear downtrend with continuous lower highs and price trading below key moving averages.",
    "error": null
+  },
+  {
+   "date": "2026-11-12 00:00:00+00:00",
+   "kind": "daily_read",
+   "ts": "2026-11-13T00:18:59.572885+00:00",
+   "mode": "enforce",
+   "model": "gemini-3.8-flash",
+   "pair": "BTC/USDT",
+   "rate": 71427.63,
+   "entry_tag": "daily_read (no live signal, hypothetical entry)",
+   "allowed": false,
+   "approve": false,
+   "confidence": 0.95,
+   "reason": "The entry contradicts strong downward price action, marked by consistent lower highs and lower lows driving price sharply below all trend moving averages.",
+   "error": null
   }
  ],
- "last_candle": "2026-11-11 00:00:00+00:00",
+ "last_candle": "2026-11-12 00:00:00+00:00",
  "events": []
 }
