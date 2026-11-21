@@ -131,6 +131,11 @@
    "date": "2026-11-19 00:00:00+00:00",
    "equity": 1000.0,
    "price": 61959.71
+  },
+  {
+   "date": "2026-11-20 00:00:00+00:00",
+   "equity": 1000.0,
+   "price": 58920.24
   }
  ],
  "ai_log": [
@@ -508,8 +513,23 @@
    "confidence": 0.95,
    "reason": "Price is in a steep downtrend making persistent lower lows and lower highs well below the trend SMA and both EMAs.",
    "error": null
+  },
+  {
+   "date": "2026-11-20 00:00:00+00:00",
+   "kind": "daily_read",
+   "ts": "2026-11-21T01:27:58.560556+00:00",
+   "mode": "enforce",
+   "model": "gemini-3.8-flash",
+   "pair": "BTC/USDT",
+   "rate": 58920.24,
+   "entry_tag": "daily_read (no live signal, hypothetical entry)",
+   "allowed": false,
+   "approve": false,
+   "confidence": 0.98,
+   "reason": "Price is in an aggressive downtrend far below the trend SMA and both EMAs with heavy distribution volume.",
+   "error": null
   }
  ],
- "last_candle": "2026-11-19 00:00:00+00:00",
+ "last_candle": "2026-11-20 00:00:00+00:00",
  "events": []
 }
