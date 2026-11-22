@@ -136,6 +136,11 @@
    "date": "2026-11-20 00:00:00+00:00",
    "equity": 1000.0,
    "price": 58920.24
+  },
+  {
+   "date": "2026-11-21 00:00:00+00:00",
+   "equity": 1000.0,
+   "price": 60197.93
   }
  ],
  "ai_log": [
@@ -528,8 +533,23 @@
    "confidence": 0.98,
    "reason": "Price is in an aggressive downtrend far below the trend SMA and both EMAs with heavy distribution volume.",
    "error": null
+  },
+  {
+   "date": "2026-11-21 00:00:00+00:00",
+   "kind": "daily_read",
+   "ts": "2026-11-22T03:08:59.857099+00:00",
+   "mode": "enforce",
+   "model": "gemini-3.8-flash",
+   "pair": "BTC/USDT",
+   "rate": 60197.93,
+   "entry_tag": "daily_read (no live signal, hypothetical entry)",
+   "allowed": false,
+   "approve": false,
+   "confidence": 0.95,
+   "reason": "ATR has spiked far above its recent range amid an extreme high-volume selloff and severe downtrend.",
+   "error": null
   }
  ],
- "last_candle": "2026-11-20 00:00:00+00:00",
+ "last_candle": "2026-11-21 00:00:00+00:00",
  "events": []
 }
